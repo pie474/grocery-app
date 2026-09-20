@@ -38,13 +38,15 @@ Included: shared realtime list, store filter ("what can I get here"),
 add-item flow that can define a brand-new catalog item with stores +
 preferred brand + image + selection criteria in one form, quantity/note/
 added-by fields per list entry (the last person selected is remembered
-per device via localStorage), an expandable detail view per item, and a
-full **Catalog** tab to browse, search, create, edit, and delete every
-item in the database — including its stores, brand list, and selection
-criteria.
+per device via localStorage), a **Bought** action separate from **delete**
+on each list row (each with its own undo toast for a few seconds after),
+a "last bought" timestamp per item shown in the item detail and Catalog
+view, a dedicated **Bought** tab to browse purchase history with "move
+back to list" or permanent delete, and a full **Catalog** tab to browse,
+search, create, edit, and delete every item in the database — including
+its stores, brand list, and selection criteria.
 
 Reasonable next steps, not built yet:
-- Swiping to delete a list entry, or an "undo" after marking something got
 - Auto-detecting which store you're at via geolocation instead of tapping
   a pill
 - Real per-member auth if you want to lock the household down beyond a

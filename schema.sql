@@ -28,7 +28,8 @@ create table items (
   name text not null,
   category text default 'uncategorized',
   unit text,
-  selection_criteria text -- e.g. "firm, deep green, slight give at the stem"
+  selection_criteria text, -- e.g. "firm, deep green, slight give at the stem"
+  last_bought_at timestamptz
 );
 
 -- many-to-many: which stores carry this item
@@ -55,7 +56,8 @@ create table list_entries (
   note text,
   status text default 'needed', -- 'needed' | 'got'
   added_by uuid references members(id),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  bought_at timestamptz
 );
 
 -- Turn on realtime so every household member's client gets pushed changes
@@ -78,22 +80,28 @@ alter table list_entries enable row level security;
 create policy "household read" on items for select using (true);
 create policy "household write" on items for insert with check (true);
 create policy "household update" on items for update using (true);
+create policy "household delete" on items for delete using (true);
 
 create policy "household read" on list_entries for select using (true);
 create policy "household write" on list_entries for insert with check (true);
 create policy "household update" on list_entries for update using (true);
+create policy "household delete" on list_entries for delete using (true);
 
 create policy "household read" on stores for select using (true);
 create policy "household write" on stores for insert with check (true);
+create policy "household delete" on stores for delete using (true);
 
 create policy "household read" on item_stores for select using (true);
 create policy "household write" on item_stores for insert with check (true);
+create policy "household delete" on item_stores for delete using (true);
 
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
+create policy "household delete" on item_brands for delete using (true);
 
 create policy "household read" on members for select using (true);
 create policy "household write" on members for insert with check (true);
+create policy "household delete" on members for delete using (true);
 
 create policy "household read" on households for select using (true);
 

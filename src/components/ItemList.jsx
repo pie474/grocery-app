@@ -1,8 +1,16 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient'
 import ItemDetail from './ItemDetail'
 
-export default function ItemList({ entries, items, itemStores, brands, members = [], activeStoreId }) {
+export default function ItemList({
+  entries,
+  items,
+  itemStores,
+  brands,
+  members = [],
+  activeStoreId,
+  onMarkBought,
+  onDelete,
+}) {
   const [expandedId, setExpandedId] = useState(null)
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
@@ -23,10 +31,6 @@ export default function ItemList({ entries, items, itemStores, brands, members =
     return acc
   }, {})
 
-  async function markGot(entryId) {
-    await supabase.from('list_entries').update({ status: 'got' }).eq('id', entryId)
-  }
-
   if (!visibleEntries.length) {
     return <p className="empty-state">Nothing needed here right now.</p>
   }
@@ -45,11 +49,6 @@ export default function ItemList({ entries, items, itemStores, brands, members =
             return (
               <div key={entry.id} className="list-row">
                 <div className="list-row-main">
-                  <input
-                    type="checkbox"
-                    checked={false}
-                    onChange={() => markGot(entry.id)}
-                  />
                   <button
                     className="item-name"
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -57,6 +56,21 @@ export default function ItemList({ entries, items, itemStores, brands, members =
                     {item?.name}
                   </button>
                   {entry.quantity && <span className="quantity">{entry.quantity}</span>}
+                  <button
+                    type="button"
+                    className="bought-button"
+                    onClick={() => onMarkBought(entry, item)}
+                  >
+                    Bought
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-button"
+                    aria-label={`Remove ${item?.name} from the list`}
+                    onClick={() => onDelete(entry, item)}
+                  >
+                    ✕
+                  </button>
                 </div>
                 {(entry.note || addedByName) && (
                   <div className="list-row-meta">

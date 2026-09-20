@@ -231,7 +231,8 @@ button:disabled {
 .list-row-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .item-name {
@@ -248,11 +249,29 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.bought-button {
+  background: #eef4ee;
+  color: #2f6f4f;
+  border: 1px solid #b7d3c1;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  flex: none;
+}
+
+.delete-button {
+  background: none;
+  color: #a33;
+  padding: 4px 8px;
+  font-size: 1rem;
+  line-height: 1;
+  flex: none;
+}
+
 .list-row-meta {
   display: flex;
   gap: 8px;
-  margin-left: 28px;
-  margin-top: 2px;
+  margin-left: 0;
+  margin-top: 4px;
   font-size: 0.82rem;
   color: #6b6a63;
   flex-wrap: wrap;
@@ -260,6 +279,74 @@ button:disabled {
 
 .entry-added-by {
   font-style: italic;
+}
+
+.entry-bought-at {
+  color: #6b6a63;
+}
+
+.last-bought {
+  margin: 4px 0 0;
+  color: #6b6a63;
+  font-size: 0.85rem;
+}
+
+/* Undo toast */
+
+.undo-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 448px;
+  margin: 0 auto;
+  background: #1c1c1a;
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.undo-toast-button {
+  background: none;
+  color: #9fd9b4;
+  padding: 0;
+  font-weight: 600;
+  flex: none;
+}
+
+/* Bought view */
+
+.bought-row {
+  border-bottom: 1px solid #ece9e0;
+  padding: 10px 0;
+}
+
+.bought-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bought-row-main .item-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.bought-row-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bought-row-actions button {
+  font-size: 0.82rem;
+  padding: 6px 10px;
 }
 
 .item-detail {
@@ -340,6 +427,18 @@ button:disabled {
 .item-category {
   color: #6b6a63;
   font-size: 0.8rem;
+}
+
+.catalog-row-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.last-bought-inline {
+  font-size: 0.78rem;
+  color: #6b6a63;
+  font-weight: 400;
 }
 
 .catalog-edit-panel {

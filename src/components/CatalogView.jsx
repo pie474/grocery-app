@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ItemEditForm from './ItemEditForm'
+import { formatRelativeTime } from '../utils/time'
 
 export default function CatalogView({ items, itemStores, brands, stores, onChanged }) {
   const [editingId, setEditingId] = useState(null) // item id, or 'new', or null
@@ -52,7 +53,14 @@ export default function CatalogView({ items, itemStores, brands, stores, onChang
               className="catalog-row-header"
               onClick={() => setEditingId(editingId === item.id ? null : item.id)}
             >
-              <span className="item-name">{item.name}</span>
+              <span className="catalog-row-title">
+                <span className="item-name">{item.name}</span>
+                {item.last_bought_at && (
+                  <span className="last-bought-inline">
+                    last bought {formatRelativeTime(item.last_bought_at)}
+                  </span>
+                )}
+              </span>
               <span className="item-category">{item.category}</span>
             </button>
 
