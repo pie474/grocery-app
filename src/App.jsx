@@ -11,28 +11,32 @@ export default function App() {
   const [itemStores, setItemStores] = useState([])
   const [brands, setBrands] = useState([])
   const [entries, setEntries] = useState([])
+  const [members, setMembers] = useState([])
   const [activeStoreId, setActiveStoreId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('list') // 'list' | 'catalog'
 
   const loadAll = useCallback(async () => {
-    const [storesRes, itemsRes, itemStoresRes, brandsRes, entriesRes] = await Promise.all([
-      supabase.from('stores').select('*').eq('household_id', HOUSEHOLD_ID),
-      supabase.from('items').select('*').eq('household_id', HOUSEHOLD_ID),
-      supabase.from('item_stores').select('*'),
-      supabase.from('item_brands').select('*'),
-      supabase
-        .from('list_entries')
-        .select('*')
-        .eq('household_id', HOUSEHOLD_ID)
-        .order('created_at', { ascending: false }),
-    ])
+    const [storesRes, itemsRes, itemStoresRes, brandsRes, entriesRes, membersRes] =
+      await Promise.all([
+        supabase.from('stores').select('*').eq('household_id', HOUSEHOLD_ID),
+        supabase.from('items').select('*').eq('household_id', HOUSEHOLD_ID),
+        supabase.from('item_stores').select('*'),
+        supabase.from('item_brands').select('*'),
+        supabase
+          .from('list_entries')
+          .select('*')
+          .eq('household_id', HOUSEHOLD_ID)
+          .order('created_at', { ascending: false }),
+        supabase.from('members').select('*').eq('household_id', HOUSEHOLD_ID),
+      ])
 
     setStores(storesRes.data || [])
     setItems(itemsRes.data || [])
     setItemStores(itemStoresRes.data || [])
     setBrands(brandsRes.data || [])
     setEntries(entriesRes.data || [])
+    setMembers(membersRes.data || [])
     setLoading(false)
   }, [])
 
@@ -90,13 +94,14 @@ export default function App() {
             onChange={setActiveStoreId}
           />
 
-          <AddItemForm items={items} stores={stores} onAdded={loadAll} />
+          <AddItemForm items={items} stores={stores} members={members} onAdded={loadAll} />
 
           <ItemList
             entries={entries}
             items={items}
             itemStores={itemStores}
             brands={brands}
+            members={members}
             activeStoreId={activeStoreId}
           />
         </>

@@ -92,6 +92,11 @@ create policy "household write" on item_stores for insert with check (true);
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
 
+create policy "household read" on members for select using (true);
+create policy "household write" on members for insert with check (true);
+
+create policy "household read" on households for select using (true);
+
 -- NOTE: these policies are intentionally open (true) to keep the starter
 -- simple — anyone with your anon key could read/write any household's
 -- data if they guessed a household_id. Fine for a private family app you

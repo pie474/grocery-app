@@ -2,8 +2,15 @@ import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
 
-export default function AddItemForm({ items, stores, onAdded }) {
+const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
+
+export default function AddItemForm({ items, stores, members = [], onAdded }) {
   const [name, setName] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [note, setNote] = useState('')
+  const [addedBy, setAddedBy] = useState(
+    () => localStorage.getItem(LAST_MEMBER_KEY) || '',
+  )
   const [showDetails, setShowDetails] = useState(false)
   const [category, setCategory] = useState('')
   const [selectedStores, setSelectedStores] = useState([])
@@ -64,9 +71,14 @@ export default function AddItemForm({ items, stores, onAdded }) {
       household_id: HOUSEHOLD_ID,
       item_id: itemId,
       status: 'needed',
+      quantity: quantity.trim() || null,
+      note: note.trim() || null,
+      added_by: addedBy || null,
     })
 
     setName('')
+    setQuantity('')
+    setNote('')
     setCategory('')
     setSelectedStores([])
     setBrandName('')
@@ -83,6 +95,15 @@ export default function AddItemForm({ items, stores, onAdded }) {
     )
   }
 
+  function handleAddedByChange(memberId) {
+    setAddedBy(memberId)
+    if (memberId) {
+      localStorage.setItem(LAST_MEMBER_KEY, memberId)
+    } else {
+      localStorage.removeItem(LAST_MEMBER_KEY)
+    }
+  }
+
   return (
     <form className="add-item-form" onSubmit={handleSubmit}>
       <div className="add-item-row">
@@ -95,6 +116,35 @@ export default function AddItemForm({ items, stores, onAdded }) {
         <button type="submit" disabled={saving || !name.trim()}>
           Add
         </button>
+      </div>
+
+      <div className="add-item-extra-row">
+        <input
+          className="quantity-input"
+          placeholder="Qty (e.g. 2, 1 gal)"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+        />
+        <input
+          className="note-input"
+          placeholder="Note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        {members.length > 0 && (
+          <select
+            className="member-select"
+            value={addedBy}
+            onChange={(e) => handleAddedByChange(e.target.value)}
+          >
+            <option value="">Who's adding?</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {!existing && name.trim() && (
