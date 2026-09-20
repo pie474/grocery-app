@@ -1,0 +1,322 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fafaf8;
+  color: #1c1c1a;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header h1 {
+  font-size: 1.4rem;
+  margin: 4px 0 12px;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #ece9e0;
+}
+
+.tab {
+  background: none;
+  color: #6b6a63;
+  border-radius: 0;
+  padding: 8px 4px;
+  margin-right: 16px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: #1c1c1a;
+  border-bottom-color: #2f6f4f;
+  font-weight: 600;
+}
+
+.store-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.store-pill {
+  flex: none;
+  border: 1px solid #d8d5cc;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  color: #1c1c1a;
+}
+
+.store-pill.active {
+  background: #2f6f4f;
+  border-color: #2f6f4f;
+  color: #fff;
+}
+
+.add-item-form {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-item-row {
+  display: flex;
+  gap: 8px;
+}
+
+.add-item-row input {
+  flex: 1;
+}
+
+input,
+textarea {
+  border: 1px solid #d8d5cc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #2f6f4f;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+.link-button {
+  background: none;
+  color: #2f6f4f;
+  padding: 0;
+  text-align: left;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.add-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f1efe8;
+  border-radius: 8px;
+}
+
+.store-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.store-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.category-group {
+  margin-bottom: 20px;
+}
+
+.category-group h3 {
+  font-size: 0.8rem;
+  color: #6b6a63;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.list-row {
+  border-bottom: 1px solid #ece9e0;
+  padding: 10px 0;
+}
+
+.list-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-name {
+  background: none;
+  color: #1c1c1a;
+  padding: 0;
+  font-size: 1rem;
+  text-align: left;
+  flex: 1;
+}
+
+.quantity {
+  color: #6b6a63;
+  font-size: 0.85rem;
+}
+
+.item-detail {
+  margin-top: 8px;
+  margin-left: 28px;
+  padding: 10px;
+  background: #f1efe8;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.brand-image {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 6px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.brand-name {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.selection-criteria {
+  margin: 4px 0 0;
+  color: #40403a;
+}
+
+.other-brands {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.brand-chip {
+  background: #e4e1d6;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.empty-state,
+.loading {
+  text-align: center;
+  color: #6b6a63;
+  margin-top: 40px;
+}
+
+/* Catalog view */
+
+.catalog-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.catalog-header input {
+  flex: 1;
+}
+
+.catalog-row {
+  border-bottom: 1px solid #ece9e0;
+}
+
+.catalog-row-header {
+  width: 100%;
+  background: none;
+  color: #1c1c1a;
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.item-category {
+  color: #6b6a63;
+  font-size: 0.8rem;
+}
+
+.catalog-edit-panel {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #f1efe8;
+  border-radius: 8px;
+}
+
+.item-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  color: #6b6a63;
+  margin: 8px 0 0;
+  font-weight: 600;
+}
+
+.brand-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.brand-row input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.preferred-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.icon-button {
+  background: none;
+  color: #a33;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary-button {
+  background: #e4e1d6;
+  color: #1c1c1a;
+}
+
+.danger-button {
+  background: #fff;
+  color: #a33;
+  border: 1px solid #a33;
+}
