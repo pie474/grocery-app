@@ -82,6 +82,50 @@ header h1 {
   flex: 1;
 }
 
+.add-item-row .autocomplete {
+  flex: 1;
+}
+
+/* Custom dropdown (replaces native <datalist>, which renders
+   inconsistently in Safari) */
+
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete input {
+  width: 100%;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.autocomplete-option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.autocomplete-option.active,
+.autocomplete-option:hover {
+  background: #f1efe8;
+}
+
 input,
 textarea {
   border: 1px solid #d8d5cc;

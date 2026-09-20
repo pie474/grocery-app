@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
+import ItemAutocomplete from './ItemAutocomplete'
 
 export default function AddItemForm({ items, stores, onAdded }) {
   const [name, setName] = useState('')
@@ -85,17 +86,12 @@ export default function AddItemForm({ items, stores, onAdded }) {
   return (
     <form className="add-item-form" onSubmit={handleSubmit}>
       <div className="add-item-row">
-        <input
-          list="known-items"
-          placeholder="Add an item…"
+        <ItemAutocomplete
+          items={items}
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={setName}
+          placeholder="Add an item…"
         />
-        <datalist id="known-items">
-          {items.map((i) => (
-            <option key={i.id} value={i.name} />
-          ))}
-        </datalist>
         <button type="submit" disabled={saving || !name.trim()}>
           Add
         </button>
