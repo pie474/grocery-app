@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
+import AddStoreInline from './AddStoreInline'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
-export default function AddItemForm({ items, stores, members = [], onAdded }) {
+export default function AddItemForm({ items, stores, members = [], onAdded, onStoreAdded }) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
@@ -176,6 +177,13 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
                 {store.name}
               </label>
             ))}
+            <AddStoreInline
+              stores={stores}
+              onAdded={async (store) => {
+                await onStoreAdded?.()
+                setSelectedStores((prev) => [...prev, store.id])
+              }}
+            />
           </div>
 
           <input

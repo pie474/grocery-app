@@ -2,7 +2,14 @@ import { useState } from 'react'
 import ItemEditForm from './ItemEditForm'
 import { formatRelativeTime } from '../utils/time'
 
-export default function CatalogView({ items, itemStores, brands, stores, onChanged }) {
+export default function CatalogView({
+  items,
+  itemStores,
+  brands,
+  stores,
+  onChanged,
+  onStoreAdded,
+}) {
   const [editingId, setEditingId] = useState(null) // item id, or 'new', or null
   const [search, setSearch] = useState('')
 
@@ -42,6 +49,7 @@ export default function CatalogView({ items, itemStores, brands, stores, onChang
             brands={[]}
             onSaved={handleSaved}
             onCancel={() => setEditingId(null)}
+            onStoreAdded={onStoreAdded}
           />
         </div>
       )}
@@ -73,6 +81,7 @@ export default function CatalogView({ items, itemStores, brands, stores, onChang
                   brands={brandsFor(item.id)}
                   onSaved={handleSaved}
                   onCancel={() => setEditingId(null)}
+                  onStoreAdded={onStoreAdded}
                 />
               </div>
             )}
