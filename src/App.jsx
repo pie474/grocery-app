@@ -199,6 +199,7 @@ export default function App() {
             activeStoreId={activeStoreId}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
+            onChanged={loadAll}
           />
         </>
       )}
