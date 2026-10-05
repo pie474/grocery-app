@@ -228,6 +228,26 @@ button:disabled {
   padding: 10px 0;
 }
 
+.list-row.is-new {
+  background: #fbf6df;
+  box-shadow: inset 3px 0 0 #d9a520;
+  padding-left: 10px;
+  padding-right: 6px;
+  border-radius: 4px;
+}
+
+.new-badge {
+  flex: none;
+  background: #d9a520;
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .list-row-main {
   display: flex;
   align-items: center;
