@@ -258,6 +258,35 @@ button:disabled {
   flex: none;
 }
 
+.edit-button {
+  background: none;
+  color: #6b6a63;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  flex: none;
+}
+
+.entry-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f1efe8;
+  border-radius: 8px;
+}
+
+.entry-edit-form .field-label {
+  margin: 0;
+}
+
+.form-error {
+  margin: 0;
+  color: #a33;
+  font-size: 0.85rem;
+}
+
 .delete-button {
   background: none;
   color: #a33;

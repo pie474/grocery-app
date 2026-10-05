@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
+import EntryEditForm from './EntryEditForm'
 
 export default function ItemList({
   entries,
@@ -10,8 +11,10 @@ export default function ItemList({
   activeStoreId,
   onMarkBought,
   onDelete,
+  onChanged,
 }) {
   const [expandedId, setExpandedId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
   const membersById = Object.fromEntries(members.map((m) => [m.id, m]))
@@ -45,6 +48,7 @@ export default function ItemList({
             const itemBrands = brands.filter((b) => b.item_id === entry.item_id)
             const isExpanded = expandedId === entry.id
             const addedByName = membersById[entry.added_by]?.name
+            const isEditing = editingId === entry.id
 
             return (
               <div key={entry.id} className="list-row">
@@ -65,6 +69,14 @@ export default function ItemList({
                   </button>
                   <button
                     type="button"
+                    className="edit-button"
+                    aria-label={`Edit ${item?.name}`}
+                    onClick={() => setEditingId(isEditing ? null : entry.id)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
                     className="delete-button"
                     aria-label={`Remove ${item?.name} from the list`}
                     onClick={() => onDelete(entry, item)}
@@ -72,7 +84,19 @@ export default function ItemList({
                     ✕
                   </button>
                 </div>
-                {(entry.note || addedByName) && (
+                {isEditing && (
+                  <EntryEditForm
+                    entry={entry}
+                    itemName={item?.name}
+                    members={members}
+                    onSaved={() => {
+                      setEditingId(null)
+                      onChanged?.()
+                    }}
+                    onCancel={() => setEditingId(null)}
+                  />
+                )}
+                {!isEditing && (entry.note || addedByName) && (
                   <div className="list-row-meta">
                     {entry.note && <span className="entry-note">{entry.note}</span>}
                     {addedByName && (
