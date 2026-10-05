@@ -8,7 +8,10 @@ Supabase.
 
 1. **Create a Supabase project** at supabase.com (free tier is plenty).
 2. **Run the schema:** open the SQL editor in your Supabase dashboard and
-   run everything in `schema.sql`.
+   run everything in `schema.sql`. This also creates the public
+   `item-photos` storage bucket used for item photos. If you set up
+   before photos existed, run just the `item_brands` update policy and the
+   `item-photos` bucket/policy statements from `schema.sql`.
 3. **Create your household row** — in the Supabase table editor, add one
    row to `households` (any name), then copy its `id`.
 4. **Add your stores** — add a few rows to `stores` (e.g. "Trader Joe's",

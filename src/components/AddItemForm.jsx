@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
+import PhotoPicker from './PhotoPicker'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
@@ -18,6 +19,7 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
   const [imageUrl, setImageUrl] = useState('')
   const [selectionCriteria, setSelectionCriteria] = useState('')
   const [saving, setSaving] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
 
   const existing = items.find(
     (i) => i.name.toLowerCase() === name.trim().toLowerCase(),
@@ -56,10 +58,11 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
           .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
       }
 
-      if (brandName.trim()) {
+      if (brandName.trim() || imageUrl) {
+        // a photo with no brand typed in is saved under the item's own name
         await supabase.from('item_brands').insert({
           item_id: itemId,
-          brand_name: brandName.trim(),
+          brand_name: brandName.trim() || name.trim(),
           image_url: imageUrl.trim() || null,
           is_preferred: true,
         })
@@ -113,7 +116,7 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
           onChange={setName}
           placeholder="Add an item…"
         />
-        <button type="submit" disabled={saving || !name.trim()}>
+        <button type="submit" disabled={saving || photoBusy || !name.trim()}>
           Add
         </button>
       </div>
@@ -183,10 +186,12 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
             value={brandName}
             onChange={(e) => setBrandName(e.target.value)}
           />
-          <input
-            placeholder="Brand image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
+          <PhotoPicker
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            onBusyChange={setPhotoBusy}
+            addLabel="Add a photo"
+            removable
           />
           <textarea
             placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
