@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatRelativeTime } from '../utils/time'
 
 export default function ItemAutocomplete({ items, value, onChange, onSelect, placeholder }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -64,7 +65,12 @@ export default function ItemAutocomplete({ items, value, onChange, onSelect, pla
                 selectItem(item)
               }}
             >
-              {item.name}
+              <span>{item.name}</span>
+              <span className="autocomplete-meta">
+                {item.last_bought_at
+                  ? `bought ${formatRelativeTime(item.last_bought_at)}`
+                  : 'never bought'}
+              </span>
             </li>
           ))}
         </ul>
