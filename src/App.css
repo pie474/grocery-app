@@ -199,6 +199,22 @@ button:disabled {
   border-radius: 8px;
 }
 
+.store-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.store-picker .field-label {
+  margin: 0;
+}
+
+.field-hint {
+  margin: 0;
+  color: #a33;
+  font-size: 0.82rem;
+}
+
 .store-checkboxes {
   display: flex;
   flex-wrap: wrap;

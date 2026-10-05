@@ -4,7 +4,7 @@ import ItemAutocomplete from './ItemAutocomplete'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
-export default function AddItemForm({ items, stores, members = [], onAdded }) {
+export default function AddItemForm({ items, stores, itemStores = [], members = [], onAdded }) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
@@ -23,9 +23,16 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
     (i) => i.name.toLowerCase() === name.trim().toLowerCase(),
   )
 
+  // Every item needs at least one store, so the list can be filtered by
+  // store. Existing items that already have one skip the picker.
+  const existingHasStores =
+    !!existing && itemStores.some((link) => link.item_id === existing.id)
+  const needsStores = !existingHasStores
+  const missingStores = needsStores && selectedStores.length === 0
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || missingStores) return
     setSaving(true)
 
     let itemId = existing?.id
@@ -50,12 +57,6 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
       }
       itemId = newItem.id
 
-      if (selectedStores.length) {
-        await supabase
-          .from('item_stores')
-          .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
-      }
-
       if (brandName.trim()) {
         await supabase.from('item_brands').insert({
           item_id: itemId,
@@ -63,6 +64,17 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
           image_url: imageUrl.trim() || null,
           is_preferred: true,
         })
+      }
+    }
+
+    if (needsStores) {
+      const { error: storesError } = await supabase
+        .from('item_stores')
+        .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
+      if (storesError) {
+        console.error(storesError)
+        setSaving(false)
+        return
       }
     }
 
@@ -113,7 +125,7 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
           onChange={setName}
           placeholder="Add an item…"
         />
-        <button type="submit" disabled={saving || !name.trim()}>
+        <button type="submit" disabled={saving || !name.trim() || missingStores}>
           Add
         </button>
       </div>
@@ -147,6 +159,29 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
         )}
       </div>
 
+      {name.trim() && needsStores && (
+        <div className="store-picker">
+          <p className="field-label">
+            {existing
+              ? `${existing.name} has no store yet. Where can you get it?`
+              : 'Available at (pick at least one)'}
+          </p>
+          <div className="store-checkboxes">
+            {stores.map((store) => (
+              <label key={store.id} className="store-checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedStores.includes(store.id)}
+                  onChange={() => toggleStore(store.id)}
+                />
+                {store.name}
+              </label>
+            ))}
+          </div>
+          {!stores.length && <p className="field-hint">No stores exist yet.</p>}
+        </div>
+      )}
+
       {!existing && name.trim() && (
         <button
           type="button"
@@ -164,19 +199,6 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           />
-
-          <div className="store-checkboxes">
-            {stores.map((store) => (
-              <label key={store.id} className="store-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedStores.includes(store.id)}
-                  onChange={() => toggleStore(store.id)}
-                />
-                {store.name}
-              </label>
-            ))}
-          </div>
 
           <input
             placeholder="Preferred brand"
