@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
+import { formatRelativeTime } from '../utils/time'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
@@ -117,6 +118,14 @@ export default function AddItemForm({ items, stores, members = [], onAdded }) {
           Add
         </button>
       </div>
+
+      {existing && (
+        <p className="last-bought">
+          {existing.last_bought_at
+            ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
+            : 'Not bought yet'}
+        </p>
+      )}
 
       <div className="add-item-extra-row">
         <input
