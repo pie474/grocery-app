@@ -197,6 +197,7 @@ export default function App() {
           <AddItemForm
             items={items}
             stores={stores}
+            itemStores={itemStores}
             members={members}
             onAdded={loadAll}
             onStoreAdded={loadAll}
@@ -211,6 +212,7 @@ export default function App() {
             activeStoreId={activeStoreId}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
+            onChanged={loadAll}
           />
         </>
       )}

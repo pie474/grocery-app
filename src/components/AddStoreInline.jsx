@@ -64,6 +64,7 @@ export default function AddStoreInline({ stores, onAdded }) {
             e.preventDefault()
             save()
           } else if (e.key === 'Escape') {
+            e.preventDefault() // inside a <dialog>, don't also close the dialog
             close()
           }
         }}

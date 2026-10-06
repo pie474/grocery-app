@@ -75,9 +75,11 @@ export default function ItemEditForm({
     onSaved()
   }
 
+  const missingStores = selectedStores.length === 0
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || missingStores) return
     setSaving(true)
 
     let itemId = item?.id
@@ -155,7 +157,7 @@ export default function ItemEditForm({
         onChange={(e) => setSelectionCriteria(e.target.value)}
       />
 
-      <p className="field-label">Available at</p>
+      <p className="field-label">Available at (pick at least one)</p>
       <div className="store-checkboxes">
         {stores.map((store) => (
           <label key={store.id} className="store-checkbox">
@@ -175,6 +177,8 @@ export default function ItemEditForm({
           }}
         />
       </div>
+
+      {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
 
       <p className="field-label">Brands</p>
       {brandRows.map((row) => (
@@ -212,7 +216,7 @@ export default function ItemEditForm({
       </button>
 
       <div className="form-actions">
-        <button type="submit" disabled={saving || !name.trim()}>
+        <button type="submit" disabled={saving || !name.trim() || missingStores}>
           {isNew ? 'Add item' : 'Save changes'}
         </button>
         <button type="button" className="secondary-button" onClick={onCancel}>
