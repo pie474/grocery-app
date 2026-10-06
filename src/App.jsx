@@ -188,7 +188,13 @@ export default function App() {
             onChange={setActiveStoreId}
           />
 
-          <AddItemForm items={items} stores={stores} members={members} onAdded={loadAll} />
+          <AddItemForm
+            items={items}
+            stores={stores}
+            itemStores={itemStores}
+            members={members}
+            onAdded={loadAll}
+          />
 
           <ItemList
             entries={entries}
