@@ -6,6 +6,7 @@ import AddItemForm from './components/AddItemForm'
 import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
+import useNewEntries from './hooks/useNewEntries'
 
 export default function App() {
   const [stores, setStores] = useState([])
@@ -19,6 +20,7 @@ export default function App() {
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
   const [toast, setToast] = useState(null) // { message, undo }
   const toastTimeoutRef = useRef(null)
+  const { isNew, dismiss } = useNewEntries(entries, !loading)
 
   const loadAll = useCallback(async () => {
     const [storesRes, itemsRes, itemStoresRes, brandsRes, entriesRes, membersRes] =
@@ -63,7 +65,15 @@ export default function App() {
       )
       .subscribe()
 
+    // Realtime events are missed while a phone is backgrounded or asleep, so
+    // catch up whenever the tab comes back.
+    function onVisibility() {
+      if (document.visibilityState === 'visible') loadAll()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
       supabase.removeChannel(channel)
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
     }
@@ -199,6 +209,8 @@ export default function App() {
             activeStoreId={activeStoreId}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
+            isNew={isNew}
+            onSeen={dismiss}
             onChanged={loadAll}
           />
         </>
