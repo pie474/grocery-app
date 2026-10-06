@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
+import NewItemDialog from './NewItemDialog'
 import { formatRelativeTime } from '../utils/time'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
@@ -12,12 +13,7 @@ export default function AddItemForm({ items, stores, itemStores = [], members = 
   const [addedBy, setAddedBy] = useState(
     () => localStorage.getItem(LAST_MEMBER_KEY) || '',
   )
-  const [showDetails, setShowDetails] = useState(false)
-  const [category, setCategory] = useState('')
-  const [selectedStores, setSelectedStores] = useState([])
-  const [brandName, setBrandName] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
-  const [selectionCriteria, setSelectionCriteria] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const existing = items.find(
@@ -25,62 +21,13 @@ export default function AddItemForm({ items, stores, itemStores = [], members = 
   )
 
   // Every item needs at least one store, so the list can be filtered by
-  // store. Existing items that already have one skip the picker.
+  // store. New items, and existing ones with no store linked, go through
+  // the dialog; everything else is added straight to the list.
   const existingHasStores =
     !!existing && itemStores.some((link) => link.item_id === existing.id)
-  const needsStores = !existingHasStores
-  const missingStores = needsStores && selectedStores.length === 0
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!name.trim() || missingStores) return
-    setSaving(true)
-
-    let itemId = existing?.id
-
-    if (!itemId) {
-      // brand-new catalog item
-      const { data: newItem, error } = await supabase
-        .from('items')
-        .insert({
-          household_id: HOUSEHOLD_ID,
-          name: name.trim(),
-          category: category.trim() || 'uncategorized',
-          selection_criteria: selectionCriteria.trim() || null,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error(error)
-        setSaving(false)
-        return
-      }
-      itemId = newItem.id
-
-      if (brandName.trim()) {
-        await supabase.from('item_brands').insert({
-          item_id: itemId,
-          brand_name: brandName.trim(),
-          image_url: imageUrl.trim() || null,
-          is_preferred: true,
-        })
-      }
-    }
-
-    if (needsStores) {
-      const { error: storesError } = await supabase
-        .from('item_stores')
-        .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
-      if (storesError) {
-        console.error(storesError)
-        setSaving(false)
-        return
-      }
-    }
-
-    // add it to the live shared list either way
-    await supabase.from('list_entries').insert({
+  async function addToList(itemId) {
+    const { error } = await supabase.from('list_entries').insert({
       household_id: HOUSEHOLD_ID,
       item_id: itemId,
       status: 'needed',
@@ -88,24 +35,70 @@ export default function AddItemForm({ items, stores, itemStores = [], members = 
       note: note.trim() || null,
       added_by: addedBy || null,
     })
-
+    if (error) {
+      console.error(error)
+      return false
+    }
     setName('')
     setQuantity('')
     setNote('')
-    setCategory('')
-    setSelectedStores([])
-    setBrandName('')
-    setImageUrl('')
-    setSelectionCriteria('')
-    setShowDetails(false)
-    setSaving(false)
     onAdded?.()
+    return true
   }
 
-  function toggleStore(storeId) {
-    setSelectedStores((prev) =>
-      prev.includes(storeId) ? prev.filter((s) => s !== storeId) : [...prev, storeId],
-    )
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    if (!existingHasStores) {
+      setDialogOpen(true)
+      return
+    }
+    setSaving(true)
+    await addToList(existing.id)
+    setSaving(false)
+  }
+
+  // Called by the dialog; returns an error message, or nothing on success.
+  async function handleCreate(details) {
+    let itemId = existing?.id
+
+    if (!itemId) {
+      const { data: newItem, error } = await supabase
+        .from('items')
+        .insert({
+          household_id: HOUSEHOLD_ID,
+          name: details.name,
+          category: details.category.trim() || 'uncategorized',
+          selection_criteria: details.selectionCriteria.trim() || null,
+        })
+        .select()
+        .single()
+      if (error) {
+        console.error(error)
+        return "Couldn't create the item. Try again."
+      }
+      itemId = newItem.id
+
+      if (details.brandName.trim()) {
+        await supabase.from('item_brands').insert({
+          item_id: itemId,
+          brand_name: details.brandName.trim(),
+          image_url: details.imageUrl.trim() || null,
+          is_preferred: true,
+        })
+      }
+    }
+
+    const { error: storesError } = await supabase
+      .from('item_stores')
+      .insert(details.stores.map((store_id) => ({ item_id: itemId, store_id })))
+    if (storesError) {
+      console.error(storesError)
+      return "Couldn't save the stores. Try again."
+    }
+
+    if (!(await addToList(itemId))) return "Couldn't add it to the list. Try again."
+    setDialogOpen(false)
   }
 
   function handleAddedByChange(memberId) {
@@ -118,114 +111,69 @@ export default function AddItemForm({ items, stores, itemStores = [], members = 
   }
 
   return (
-    <form className="add-item-form" onSubmit={handleSubmit}>
-      <div className="add-item-row">
-        <ItemAutocomplete
-          items={items}
-          value={name}
-          onChange={setName}
-          placeholder="Add an item…"
-        />
-        <button type="submit" disabled={saving || !name.trim() || missingStores}>
-          Add
-        </button>
-      </div>
+    <>
+      <form className="add-item-form" onSubmit={handleSubmit}>
+        <div className="add-item-row">
+          <ItemAutocomplete
+            items={items}
+            value={name}
+            onChange={setName}
+            placeholder="Add an item…"
+          />
+          <button type="submit" disabled={saving || !name.trim()}>
+            Add
+          </button>
+        </div>
 
-      {existing && (
-        <p className="last-bought">
-          {existing.last_bought_at
-            ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
-            : 'Not bought yet'}
-        </p>
-      )}
-
-      <div className="add-item-extra-row">
-        <input
-          className="quantity-input"
-          placeholder="Qty (e.g. 2, 1 gal)"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-        <input
-          className="note-input"
-          placeholder="Note (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-        {members.length > 0 && (
-          <select
-            className="member-select"
-            value={addedBy}
-            onChange={(e) => handleAddedByChange(e.target.value)}
-          >
-            <option value="">Who's adding?</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {name.trim() && needsStores && (
-        <div className="store-picker">
-          <p className="field-label">
-            {existing
-              ? `${existing.name} has no store yet. Where can you get it?`
-              : 'Available at (pick at least one)'}
+        {existing && (
+          <p className="last-bought">
+            {existing.last_bought_at
+              ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
+              : 'Not bought yet'}
           </p>
-          <div className="store-checkboxes">
-            {stores.map((store) => (
-              <label key={store.id} className="store-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedStores.includes(store.id)}
-                  onChange={() => toggleStore(store.id)}
-                />
-                {store.name}
-              </label>
-            ))}
-          </div>
-          {!stores.length && <p className="field-hint">No stores exist yet.</p>}
+        )}
+
+        <div className="add-item-extra-row">
+          <input
+            className="quantity-input"
+            placeholder="Qty (e.g. 2, 1 gal)"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+          <input
+            className="note-input"
+            placeholder="Note (optional)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          {members.length > 0 && (
+            <select
+              className="member-select"
+              value={addedBy}
+              onChange={(e) => handleAddedByChange(e.target.value)}
+            >
+              <option value="">Who's adding?</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-      )}
+      </form>
 
-      {!existing && name.trim() && (
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => setShowDetails((s) => !s)}
-        >
-          {showDetails ? 'Hide details' : 'New item — add details?'}
-        </button>
+      {/* outside the form above: forms can't nest */}
+      {dialogOpen && (
+        <NewItemDialog
+          initialName={name.trim()}
+          existing={existing}
+          items={items}
+          stores={stores}
+          onSave={handleCreate}
+          onClose={() => setDialogOpen(false)}
+        />
       )}
-
-      {showDetails && !existing && (
-        <div className="add-item-details">
-          <input
-            placeholder="Category (e.g. produce, dairy)"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          />
-
-          <input
-            placeholder="Preferred brand"
-            value={brandName}
-            onChange={(e) => setBrandName(e.target.value)}
-          />
-          <input
-            placeholder="Brand image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-          />
-          <textarea
-            placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
-            value={selectionCriteria}
-            onChange={(e) => setSelectionCriteria(e.target.value)}
-          />
-        </div>
-      )}
-    </form>
+    </>
   )
 }
