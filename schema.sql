@@ -63,6 +63,7 @@ create table list_entries (
 -- Turn on realtime so every household member's client gets pushed changes
 alter publication supabase_realtime add table list_entries;
 alter publication supabase_realtime add table items;
+alter publication supabase_realtime add table stores;
 alter publication supabase_realtime add table item_brands;
 
 -- Row Level Security: this starter uses one shared household id (from
@@ -97,7 +98,19 @@ create policy "household delete" on item_stores for delete using (true);
 
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
+create policy "household update" on item_brands for update using (true);
 create policy "household delete" on item_brands for delete using (true);
+
+-- Item photos: a public bucket (the URL is what gets saved on item_brands).
+-- Same open-by-design policies as everything else here; see the note below.
+insert into storage.buckets (id, name, public)
+values ('item-photos', 'item-photos', true)
+on conflict (id) do nothing;
+
+create policy "item photos read" on storage.objects
+  for select using (bucket_id = 'item-photos');
+create policy "item photos upload" on storage.objects
+  for insert with check (bucket_id = 'item-photos');
 
 create policy "household read" on members for select using (true);
 create policy "household write" on members for insert with check (true);

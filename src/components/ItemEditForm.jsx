@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
+import PhotoPicker from './PhotoPicker'
+import AddStoreInline from './AddStoreInline'
 
 function makeBrandRow(brand) {
   return {
@@ -11,7 +13,15 @@ function makeBrandRow(brand) {
   }
 }
 
-export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, onCancel }) {
+export default function ItemEditForm({
+  item,
+  storeIds,
+  brands,
+  stores,
+  onSaved,
+  onCancel,
+  onStoreAdded,
+}) {
   const isNew = !item
 
   const [name, setName] = useState(item?.name || '')
@@ -22,6 +32,7 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
   )
   const [saving, setSaving] = useState(false)
+  const [uploadsInFlight, setUploadsInFlight] = useState(0)
 
   function toggleStore(storeId) {
     setSelectedStores((prev) =>
@@ -66,9 +77,11 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
     onSaved()
   }
 
+  const missingStores = selectedStores.length === 0
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || missingStores) return
     setSaving(true)
 
     let itemId = item?.id
@@ -146,7 +159,7 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
         onChange={(e) => setSelectionCriteria(e.target.value)}
       />
 
-      <p className="field-label">Available at</p>
+      <p className="field-label">Available at (pick at least one)</p>
       <div className="store-checkboxes">
         {stores.map((store) => (
           <label key={store.id} className="store-checkbox">
@@ -158,7 +171,16 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
             {store.name}
           </label>
         ))}
+        <AddStoreInline
+          stores={stores}
+          onAdded={async (store) => {
+            await onStoreAdded?.()
+            setSelectedStores((prev) => [...prev, store.id])
+          }}
+        />
       </div>
+
+      {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
 
       <p className="field-label">Brands</p>
       {brandRows.map((row) => (
@@ -168,10 +190,11 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
             value={row.brand_name}
             onChange={(e) => updateBrandRow(row.key, 'brand_name', e.target.value)}
           />
-          <input
-            placeholder="Image URL"
-            value={row.image_url}
-            onChange={(e) => updateBrandRow(row.key, 'image_url', e.target.value)}
+          <PhotoPicker
+            imageUrl={row.image_url}
+            onChange={(url) => updateBrandRow(row.key, 'image_url', url)}
+            onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
+            removable
           />
           <label className="preferred-toggle">
             <input
@@ -196,7 +219,10 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
       </button>
 
       <div className="form-actions">
-        <button type="submit" disabled={saving || !name.trim()}>
+        <button
+          type="submit"
+          disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
+        >
           {isNew ? 'Add item' : 'Save changes'}
         </button>
         <button type="button" className="secondary-button" onClick={onCancel}>
