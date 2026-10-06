@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
+import AddStoreInline from './AddStoreInline'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
 // optional ones follow, all visible, so nothing is hidden behind a toggle.
 //
 // onSave(details) resolves to an error message, or nothing on success.
-export default function NewItemDialog({ initialName, existing, items, stores, onSave, onClose }) {
+export default function NewItemDialog({
+  initialName,
+  existing,
+  items,
+  stores,
+  onSave,
+  onClose,
+  onStoreAdded,
+}) {
   const dialogRef = useRef(null)
   const [name, setName] = useState(existing?.name || initialName)
   const [selectedStores, setSelectedStores] = useState([])
@@ -92,6 +101,13 @@ export default function NewItemDialog({ initialName, existing, items, stores, on
                 {store.name}
               </label>
             ))}
+            <AddStoreInline
+              stores={stores}
+              onAdded={async (store) => {
+                await onStoreAdded?.()
+                setSelectedStores((prev) => [...prev, store.id])
+              }}
+            />
           </div>
           {!stores.length && <span className="field-hint">No stores exist yet.</span>}
         </fieldset>

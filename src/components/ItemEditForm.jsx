@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
+import AddStoreInline from './AddStoreInline'
 
 function makeBrandRow(brand) {
   return {
@@ -12,7 +13,15 @@ function makeBrandRow(brand) {
   }
 }
 
-export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, onCancel }) {
+export default function ItemEditForm({
+  item,
+  storeIds,
+  brands,
+  stores,
+  onSaved,
+  onCancel,
+  onStoreAdded,
+}) {
   const isNew = !item
 
   const [name, setName] = useState(item?.name || '')
@@ -162,6 +171,13 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
             {store.name}
           </label>
         ))}
+        <AddStoreInline
+          stores={stores}
+          onAdded={async (store) => {
+            await onStoreAdded?.()
+            setSelectedStores((prev) => [...prev, store.id])
+          }}
+        />
       </div>
 
       {missingStores && <p className="field-hint">Pick at least one store to save.</p>}

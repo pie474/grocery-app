@@ -61,6 +61,11 @@ export default function App() {
         { event: '*', schema: 'public', table: 'items' },
         () => loadAll(),
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'stores' },
+        () => loadAll(),
+      )
       .subscribe()
 
     return () => {
@@ -186,6 +191,7 @@ export default function App() {
             stores={stores}
             activeStoreId={activeStoreId}
             onChange={setActiveStoreId}
+            onStoreAdded={loadAll}
           />
 
           <AddItemForm
@@ -194,6 +200,7 @@ export default function App() {
             itemStores={itemStores}
             members={members}
             onAdded={loadAll}
+            onStoreAdded={loadAll}
           />
 
           <ItemList
@@ -227,6 +234,7 @@ export default function App() {
           brands={brands}
           stores={stores}
           onChanged={loadAll}
+          onStoreAdded={loadAll}
         />
       )}
 
