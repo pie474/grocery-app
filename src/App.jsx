@@ -211,6 +211,7 @@ export default function App() {
             onDelete={handleDeleteEntry}
             isNew={isNew}
             onSeen={dismiss}
+            onChanged={loadAll}
           />
         </>
       )}

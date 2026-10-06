@@ -143,10 +143,20 @@ select {
 }
 
 .autocomplete-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 0.95rem;
   cursor: pointer;
+}
+
+.autocomplete-meta {
+  flex: none;
+  color: #6b6a63;
+  font-size: 0.78rem;
 }
 
 .autocomplete-option.active,
@@ -278,6 +288,35 @@ button:disabled {
   flex: none;
 }
 
+.edit-button {
+  background: none;
+  color: #6b6a63;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  flex: none;
+}
+
+.entry-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f1efe8;
+  border-radius: 8px;
+}
+
+.entry-edit-form .field-label {
+  margin: 0;
+}
+
+.form-error {
+  margin: 0;
+  color: #a33;
+  font-size: 0.85rem;
+}
+
 .delete-button {
   background: none;
   color: #a33;
@@ -303,6 +342,10 @@ button:disabled {
 
 .entry-bought-at {
   color: #6b6a63;
+}
+
+.add-item-form .last-bought {
+  margin: 0;
 }
 
 .last-bought {

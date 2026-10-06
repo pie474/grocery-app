@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
+import EntryEditForm from './EntryEditForm'
 
 export default function ItemList({
   entries,
@@ -12,8 +13,10 @@ export default function ItemList({
   onDelete,
   isNew,
   onSeen,
+  onChanged,
 }) {
   const [expandedId, setExpandedId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
   const membersById = Object.fromEntries(members.map((m) => [m.id, m]))
@@ -48,6 +51,7 @@ export default function ItemList({
             const isExpanded = expandedId === entry.id
             const addedByName = membersById[entry.added_by]?.name
             const highlighted = !!isNew?.(entry)
+            const isEditing = editingId === entry.id
 
             return (
               <div
@@ -73,6 +77,14 @@ export default function ItemList({
                   </button>
                   <button
                     type="button"
+                    className="edit-button"
+                    aria-label={`Edit ${item?.name}`}
+                    onClick={() => setEditingId(isEditing ? null : entry.id)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
                     className="delete-button"
                     aria-label={`Remove ${item?.name} from the list`}
                     onClick={() => onDelete(entry, item)}
@@ -80,7 +92,19 @@ export default function ItemList({
                     ✕
                   </button>
                 </div>
-                {(entry.note || addedByName) && (
+                {isEditing && (
+                  <EntryEditForm
+                    entry={entry}
+                    itemName={item?.name}
+                    members={members}
+                    onSaved={() => {
+                      setEditingId(null)
+                      onChanged?.()
+                    }}
+                    onCancel={() => setEditingId(null)}
+                  />
+                )}
+                {!isEditing && (entry.note || addedByName) && (
                   <div className="list-row-meta">
                     {entry.note && <span className="entry-note">{entry.note}</span>}
                     {addedByName && (
