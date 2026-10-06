@@ -66,6 +66,45 @@ header h1 {
   color: #fff;
 }
 
+.add-store-button {
+  flex: none;
+  background: none;
+  color: #2f6f4f;
+  border: 1px dashed #b7d3c1;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+}
+
+.add-store-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.add-store-inline input {
+  width: 140px;
+  padding: 6px 10px;
+}
+
+.add-store-inline button {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.add-store-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.field-hint {
+  margin: 0;
+  color: #a33;
+  font-size: 0.82rem;
+}
+
 .add-item-form {
   margin-bottom: 24px;
   display: flex;
@@ -200,13 +239,10 @@ button:disabled {
   text-decoration: underline;
 }
 
-.add-item-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: #f1efe8;
-  border-radius: 8px;
+.field-hint {
+  margin: 0;
+  color: #a33;
+  font-size: 0.82rem;
 }
 
 .store-checkboxes {
@@ -547,4 +583,58 @@ button:disabled {
   background: #fff;
   color: #a33;
   border: 1px solid #a33;
+}
+
+/* New item dialog */
+
+.item-dialog {
+  width: calc(100% - 32px);
+  max-width: 440px;
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: #fafaf8;
+  color: #1c1c1a;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.item-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.item-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.item-dialog-form h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.dialog-field .field-label {
+  margin: 0;
+  padding: 0;
+}
+
+.dialog-section {
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #ece9e0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b6a63;
 }

@@ -63,6 +63,7 @@ create table list_entries (
 -- Turn on realtime so every household member's client gets pushed changes
 alter publication supabase_realtime add table list_entries;
 alter publication supabase_realtime add table items;
+alter publication supabase_realtime add table stores;
 alter publication supabase_realtime add table item_brands;
 
 -- Row Level Security: this starter uses one shared household id (from
