@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import ItemAutocomplete from './ItemAutocomplete'
 import NewItemDialog from './NewItemDialog'
+import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
@@ -67,45 +68,11 @@ export default function AddItemForm({
 
   // Called by the dialog; returns an error message, or nothing on success.
   async function handleCreate(details) {
-    let itemId = existing?.id
-
-    if (!itemId) {
-      const { data: newItem, error } = await supabase
-        .from('items')
-        .insert({
-          household_id: HOUSEHOLD_ID,
-          name: details.name,
-          category: details.category.trim() || 'uncategorized',
-          selection_criteria: details.selectionCriteria.trim() || null,
-        })
-        .select()
-        .single()
-      if (error) {
-        console.error(error)
-        return "Couldn't create the item. Try again."
-      }
-      itemId = newItem.id
-
-      if (details.brandName.trim() || details.imageUrl) {
-        // a photo with no brand typed in is saved under the item's own name
-        await supabase.from('item_brands').insert({
-          item_id: itemId,
-          brand_name: details.brandName.trim() || details.name,
-          image_url: details.imageUrl.trim() || null,
-          is_preferred: true,
-        })
-      }
-    }
-
-    const { error: storesError } = await supabase
-      .from('item_stores')
-      .insert(details.stores.map((store_id) => ({ item_id: itemId, store_id })))
-    if (storesError) {
-      console.error(storesError)
-      return "Couldn't save the stores. Try again."
-    }
-
-    if (!(await addToList(itemId))) return "Couldn't add it to the list. Try again."
+    const result = existing
+      ? await linkStores(existing.id, details.stores)
+      : await createItem(details)
+    if (result.error) return result.error
+    if (!(await addToList(result.itemId))) return "Couldn't add it to the list. Try again."
     setDialogOpen(false)
   }
 

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import ItemEditForm from './ItemEditForm'
+import NewItemDialog from './NewItemDialog'
+import { createItem } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 
 export default function CatalogView({
@@ -10,7 +12,8 @@ export default function CatalogView({
   onChanged,
   onStoreAdded,
 }) {
-  const [editingId, setEditingId] = useState(null) // item id, or 'new', or null
+  const [editingId, setEditingId] = useState(null) // item id, or null
+  const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
 
   const filtered = items
@@ -30,6 +33,14 @@ export default function CatalogView({
     onChanged()
   }
 
+  // Called by the dialog; returns an error message, or nothing on success.
+  async function handleCreate(details) {
+    const { error } = await createItem(details)
+    if (error) return error
+    setCreating(false)
+    onChanged()
+  }
+
   return (
     <div className="catalog-view">
       <div className="catalog-header">
@@ -38,20 +49,19 @@ export default function CatalogView({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button onClick={() => setEditingId('new')}>+ New item</button>
+        <button onClick={() => setCreating(true)}>+ New item</button>
       </div>
 
-      {editingId === 'new' && (
-        <div className="catalog-edit-panel">
-          <ItemEditForm
-            stores={stores}
-            storeIds={[]}
-            brands={[]}
-            onSaved={handleSaved}
-            onCancel={() => setEditingId(null)}
-            onStoreAdded={onStoreAdded}
-          />
-        </div>
+      {creating && (
+        <NewItemDialog
+          initialName={search.trim()}
+          items={items}
+          stores={stores}
+          submitLabel="Save item"
+          onSave={handleCreate}
+          onClose={() => setCreating(false)}
+          onStoreAdded={onStoreAdded}
+        />
       )}
 
       <div className="catalog-list">

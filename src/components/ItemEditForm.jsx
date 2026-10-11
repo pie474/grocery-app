@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
+import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 
@@ -13,6 +13,7 @@ function makeBrandRow(brand) {
   }
 }
 
+// Edits an existing catalog item. New items are created in NewItemDialog.
 export default function ItemEditForm({
   item,
   storeIds,
@@ -22,11 +23,9 @@ export default function ItemEditForm({
   onCancel,
   onStoreAdded,
 }) {
-  const isNew = !item
-
-  const [name, setName] = useState(item?.name || '')
-  const [category, setCategory] = useState(item?.category || '')
-  const [selectionCriteria, setSelectionCriteria] = useState(item?.selection_criteria || '')
+  const [name, setName] = useState(item.name || '')
+  const [category, setCategory] = useState(item.category || '')
+  const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
   const [selectedStores, setSelectedStores] = useState(storeIds || [])
   const [brandRows, setBrandRows] = useState(
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
@@ -67,7 +66,6 @@ export default function ItemEditForm({
   }
 
   async function handleDeleteItem() {
-    if (!item) return
     if (!confirm(`Delete "${item.name}" from the catalog? This also removes it from any current list.`)) {
       return
     }
@@ -84,35 +82,16 @@ export default function ItemEditForm({
     if (!name.trim() || missingStores) return
     setSaving(true)
 
-    let itemId = item?.id
+    const itemId = item.id
 
-    if (isNew) {
-      const { data: newItem, error } = await supabase
-        .from('items')
-        .insert({
-          household_id: HOUSEHOLD_ID,
-          name: name.trim(),
-          category: category.trim() || 'uncategorized',
-          selection_criteria: selectionCriteria.trim() || null,
-        })
-        .select()
-        .single()
-      if (error) {
-        console.error(error)
-        setSaving(false)
-        return
-      }
-      itemId = newItem.id
-    } else {
-      await supabase
-        .from('items')
-        .update({
-          name: name.trim(),
-          category: category.trim() || 'uncategorized',
-          selection_criteria: selectionCriteria.trim() || null,
-        })
-        .eq('id', itemId)
-    }
+    await supabase
+      .from('items')
+      .update({
+        name: name.trim(),
+        category: category.trim() || 'uncategorized',
+        selection_criteria: selectionCriteria.trim() || null,
+      })
+      .eq('id', itemId)
 
     // Sync stores: replace the full set for this item.
     await supabase.from('item_stores').delete().eq('item_id', itemId)
@@ -223,21 +202,19 @@ export default function ItemEditForm({
           type="submit"
           disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
         >
-          {isNew ? 'Add item' : 'Save changes'}
+          Save changes
         </button>
         <button type="button" className="secondary-button" onClick={onCancel}>
           Cancel
         </button>
-        {!isNew && (
-          <button
-            type="button"
-            className="danger-button"
-            onClick={handleDeleteItem}
-            disabled={saving}
-          >
-            Delete item
-          </button>
-        )}
+        <button
+          type="button"
+          className="danger-button"
+          onClick={handleDeleteItem}
+          disabled={saving}
+        >
+          Delete item
+        </button>
       </div>
     </form>
   )

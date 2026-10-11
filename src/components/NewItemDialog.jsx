@@ -15,6 +15,7 @@ export default function NewItemDialog({
   onSave,
   onClose,
   onStoreAdded,
+  submitLabel = 'Add to list',
 }) {
   const dialogRef = useRef(null)
   const [name, setName] = useState(existing?.name || initialName)
@@ -152,7 +153,7 @@ export default function NewItemDialog({
 
         <div className="form-actions">
           <button type="submit" disabled={!canSave}>
-            {saving ? 'Adding…' : 'Add to list'}
+            {saving ? 'Saving…' : submitLabel}
           </button>
           <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
             Cancel
