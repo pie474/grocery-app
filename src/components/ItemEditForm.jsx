@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
+import { supabase } from '../supabaseClient'
 
 function makeBrandRow(brand) {
   return {
@@ -11,12 +11,11 @@ function makeBrandRow(brand) {
   }
 }
 
+// Edits an existing catalog item. New items are created in NewItemDialog.
 export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, onCancel }) {
-  const isNew = !item
-
-  const [name, setName] = useState(item?.name || '')
-  const [category, setCategory] = useState(item?.category || '')
-  const [selectionCriteria, setSelectionCriteria] = useState(item?.selection_criteria || '')
+  const [name, setName] = useState(item.name || '')
+  const [category, setCategory] = useState(item.category || '')
+  const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
   const [selectedStores, setSelectedStores] = useState(storeIds || [])
   const [brandRows, setBrandRows] = useState(
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
@@ -56,7 +55,6 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
   }
 
   async function handleDeleteItem() {
-    if (!item) return
     if (!confirm(`Delete "${item.name}" from the catalog? This also removes it from any current list.`)) {
       return
     }
@@ -66,40 +64,23 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
     onSaved()
   }
 
+  const missingStores = selectedStores.length === 0
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || missingStores) return
     setSaving(true)
 
-    let itemId = item?.id
+    const itemId = item.id
 
-    if (isNew) {
-      const { data: newItem, error } = await supabase
-        .from('items')
-        .insert({
-          household_id: HOUSEHOLD_ID,
-          name: name.trim(),
-          category: category.trim() || 'uncategorized',
-          selection_criteria: selectionCriteria.trim() || null,
-        })
-        .select()
-        .single()
-      if (error) {
-        console.error(error)
-        setSaving(false)
-        return
-      }
-      itemId = newItem.id
-    } else {
-      await supabase
-        .from('items')
-        .update({
-          name: name.trim(),
-          category: category.trim() || 'uncategorized',
-          selection_criteria: selectionCriteria.trim() || null,
-        })
-        .eq('id', itemId)
-    }
+    await supabase
+      .from('items')
+      .update({
+        name: name.trim(),
+        category: category.trim() || 'uncategorized',
+        selection_criteria: selectionCriteria.trim() || null,
+      })
+      .eq('id', itemId)
 
     // Sync stores: replace the full set for this item.
     await supabase.from('item_stores').delete().eq('item_id', itemId)
@@ -146,7 +127,7 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
         onChange={(e) => setSelectionCriteria(e.target.value)}
       />
 
-      <p className="field-label">Available at</p>
+      <p className="field-label">Available at (pick at least one)</p>
       <div className="store-checkboxes">
         {stores.map((store) => (
           <label key={store.id} className="store-checkbox">
@@ -159,6 +140,8 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
           </label>
         ))}
       </div>
+
+      {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
 
       <p className="field-label">Brands</p>
       {brandRows.map((row) => (
@@ -196,22 +179,20 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
       </button>
 
       <div className="form-actions">
-        <button type="submit" disabled={saving || !name.trim()}>
-          {isNew ? 'Add item' : 'Save changes'}
+        <button type="submit" disabled={saving || !name.trim() || missingStores}>
+          Save changes
         </button>
         <button type="button" className="secondary-button" onClick={onCancel}>
           Cancel
         </button>
-        {!isNew && (
-          <button
-            type="button"
-            className="danger-button"
-            onClick={handleDeleteItem}
-            disabled={saving}
-          >
-            Delete item
-          </button>
-        )}
+        <button
+          type="button"
+          className="danger-button"
+          onClick={handleDeleteItem}
+          disabled={saving}
+        >
+          Delete item
+        </button>
       </div>
     </form>
   )
