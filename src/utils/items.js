@@ -30,10 +30,11 @@ export async function createItem(details) {
     return { error: "Couldn't create the item. Try again." }
   }
 
-  if (details.brandName.trim()) {
+  if (details.brandName.trim() || details.imageUrl) {
+    // a photo with no brand typed in is saved under the item's own name
     await supabase.from('item_brands').insert({
       item_id: newItem.id,
-      brand_name: details.brandName.trim(),
+      brand_name: details.brandName.trim() || details.name,
       image_url: details.imageUrl.trim() || null,
       is_preferred: true,
     })

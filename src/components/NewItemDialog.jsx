@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 
 // Modal for creating a catalog item (or, for an existing item that has no
@@ -24,6 +25,7 @@ export default function NewItemDialog({
   const [imageUrl, setImageUrl] = useState('')
   const [selectionCriteria, setSelectionCriteria] = useState('')
   const [saving, setSaving] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function NewItemDialog({
   const trimmedName = name.trim()
   const duplicate =
     !existing && items.some((i) => i.name.toLowerCase() === trimmedName.toLowerCase())
-  const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving
+  const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving && !photoBusy
 
   function toggleStore(storeId) {
     setSelectedStores((prev) =>
@@ -126,10 +128,16 @@ export default function NewItemDialog({
               <span className="field-label">Preferred brand</span>
               <input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
             </label>
-            <label className="dialog-field">
-              <span className="field-label">Brand image URL</span>
-              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-            </label>
+            <div className="dialog-field">
+              <span className="field-label">Photo</span>
+              <PhotoPicker
+                imageUrl={imageUrl}
+                onChange={setImageUrl}
+                onBusyChange={setPhotoBusy}
+                addLabel="Add a photo"
+                removable
+              />
+            </div>
             <label className="dialog-field">
               <span className="field-label">How to pick a good one</span>
               <textarea

@@ -105,7 +105,7 @@ export default function ItemList({
                   </div>
                 )}
                 {isExpanded && item && (
-                  <ItemDetail item={item} brands={itemBrands} />
+                  <ItemDetail item={item} brands={itemBrands} onChanged={onChanged} />
                 )}
               </div>
             )
