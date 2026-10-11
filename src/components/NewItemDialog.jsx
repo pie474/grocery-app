@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import AddStoreInline from './AddStoreInline'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
@@ -12,6 +13,7 @@ export default function NewItemDialog({
   stores,
   onSave,
   onClose,
+  onStoreAdded,
   submitLabel = 'Add to list',
 }) {
   const dialogRef = useRef(null)
@@ -98,6 +100,13 @@ export default function NewItemDialog({
                 {store.name}
               </label>
             ))}
+            <AddStoreInline
+              stores={stores}
+              onAdded={async (store) => {
+                await onStoreAdded?.()
+                setSelectedStores((prev) => [...prev, store.id])
+              }}
+            />
           </div>
           {!stores.length && <span className="field-hint">No stores exist yet.</span>}
         </fieldset>

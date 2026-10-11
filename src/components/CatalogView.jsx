@@ -4,7 +4,14 @@ import NewItemDialog from './NewItemDialog'
 import { createItem } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 
-export default function CatalogView({ items, itemStores, brands, stores, onChanged }) {
+export default function CatalogView({
+  items,
+  itemStores,
+  brands,
+  stores,
+  onChanged,
+  onStoreAdded,
+}) {
   const [editingId, setEditingId] = useState(null) // item id, or null
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
@@ -53,6 +60,7 @@ export default function CatalogView({ items, itemStores, brands, stores, onChang
           submitLabel="Save item"
           onSave={handleCreate}
           onClose={() => setCreating(false)}
+          onStoreAdded={onStoreAdded}
         />
       )}
 
@@ -83,6 +91,7 @@ export default function CatalogView({ items, itemStores, brands, stores, onChang
                   brands={brandsFor(item.id)}
                   onSaved={handleSaved}
                   onCancel={() => setEditingId(null)}
+                  onStoreAdded={onStoreAdded}
                 />
               </div>
             )}

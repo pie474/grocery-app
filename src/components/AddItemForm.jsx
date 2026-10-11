@@ -7,7 +7,14 @@ import { formatRelativeTime } from '../utils/time'
 
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
-export default function AddItemForm({ items, stores, itemStores = [], members = [], onAdded }) {
+export default function AddItemForm({
+  items,
+  stores,
+  itemStores = [],
+  members = [],
+  onAdded,
+  onStoreAdded,
+}) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
@@ -139,6 +146,7 @@ export default function AddItemForm({ items, stores, itemStores = [], members = 
           items={items}
           stores={stores}
           onSave={handleCreate}
+          onStoreAdded={onStoreAdded}
           onClose={() => setDialogOpen(false)}
         />
       )}

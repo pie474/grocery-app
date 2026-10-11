@@ -66,6 +66,45 @@ header h1 {
   color: #fff;
 }
 
+.add-store-button {
+  flex: none;
+  background: none;
+  color: #2f6f4f;
+  border: 1px dashed #b7d3c1;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+}
+
+.add-store-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.add-store-inline input {
+  width: 140px;
+  padding: 6px 10px;
+}
+
+.add-store-inline button {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.add-store-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.field-hint {
+  margin: 0;
+  color: #a33;
+  font-size: 0.82rem;
+}
+
 .add-item-form {
   margin-bottom: 24px;
   display: flex;

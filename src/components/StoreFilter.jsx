@@ -1,4 +1,6 @@
-export default function StoreFilter({ stores, activeStoreId, onChange }) {
+import AddStoreInline from './AddStoreInline'
+
+export default function StoreFilter({ stores, activeStoreId, onChange, onStoreAdded }) {
   return (
     <div className="store-filter">
       <button
@@ -16,6 +18,7 @@ export default function StoreFilter({ stores, activeStoreId, onChange }) {
           {store.name}
         </button>
       ))}
+      <AddStoreInline stores={stores} onAdded={() => onStoreAdded?.()} />
     </div>
   )
 }

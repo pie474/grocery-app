@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import AddStoreInline from './AddStoreInline'
 
 function makeBrandRow(brand) {
   return {
@@ -12,7 +13,15 @@ function makeBrandRow(brand) {
 }
 
 // Edits an existing catalog item. New items are created in NewItemDialog.
-export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, onCancel }) {
+export default function ItemEditForm({
+  item,
+  storeIds,
+  brands,
+  stores,
+  onSaved,
+  onCancel,
+  onStoreAdded,
+}) {
   const [name, setName] = useState(item.name || '')
   const [category, setCategory] = useState(item.category || '')
   const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
@@ -139,6 +148,13 @@ export default function ItemEditForm({ item, storeIds, brands, stores, onSaved, 
             {store.name}
           </label>
         ))}
+        <AddStoreInline
+          stores={stores}
+          onAdded={async (store) => {
+            await onStoreAdded?.()
+            setSelectedStores((prev) => [...prev, store.id])
+          }}
+        />
       </div>
 
       {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
