@@ -5,7 +5,15 @@ import { useEffect, useRef, useState } from 'react'
 // optional ones follow, all visible, so nothing is hidden behind a toggle.
 //
 // onSave(details) resolves to an error message, or nothing on success.
-export default function NewItemDialog({ initialName, existing, items, stores, onSave, onClose }) {
+export default function NewItemDialog({
+  initialName,
+  existing,
+  items,
+  stores,
+  onSave,
+  onClose,
+  submitLabel = 'Add to list',
+}) {
   const dialogRef = useRef(null)
   const [name, setName] = useState(existing?.name || initialName)
   const [selectedStores, setSelectedStores] = useState([])
@@ -128,7 +136,7 @@ export default function NewItemDialog({ initialName, existing, items, stores, on
 
         <div className="form-actions">
           <button type="submit" disabled={!canSave}>
-            {saving ? 'Adding…' : 'Add to list'}
+            {saving ? 'Saving…' : submitLabel}
           </button>
           <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
             Cancel
