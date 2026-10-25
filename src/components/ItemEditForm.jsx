@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 import Autocomplete from './Autocomplete'
-import { categoryOptions } from '../utils/items'
+import { categoryOptions, findCategory, resolveCategory } from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -18,7 +18,7 @@ function makeBrandRow(brand) {
 // Edits an existing catalog item. New items are created in NewItemDialog.
 export default function ItemEditForm({
   item,
-  items,
+  categories,
   storeIds,
   brands,
   stores,
@@ -27,7 +27,9 @@ export default function ItemEditForm({
   onStoreAdded,
 }) {
   const [name, setName] = useState(item.name || '')
-  const [category, setCategory] = useState(item.category || '')
+  const [category, setCategory] = useState(
+    () => categories.find((c) => c.id === item.category_id)?.name || '',
+  )
   const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
   const [selectedStores, setSelectedStores] = useState(storeIds || [])
   const [brandRows, setBrandRows] = useState(
@@ -35,6 +37,7 @@ export default function ItemEditForm({
   )
   const [saving, setSaving] = useState(false)
   const [uploadsInFlight, setUploadsInFlight] = useState(0)
+  const [error, setError] = useState(null)
 
   function toggleStore(storeId) {
     setSelectedStores((prev) =>
@@ -79,19 +82,28 @@ export default function ItemEditForm({
   }
 
   const missingStores = selectedStores.length === 0
+  const newCategory = !!category.trim() && !findCategory(categories, category)
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim() || missingStores) return
     setSaving(true)
+    setError(null)
 
     const itemId = item.id
+
+    const { categoryId, error: categoryError } = await resolveCategory(categories, category)
+    if (categoryError) {
+      setError(categoryError)
+      setSaving(false)
+      return
+    }
 
     await supabase
       .from('items')
       .update({
         name: name.trim(),
-        category: category.trim() || 'uncategorized',
+        category_id: categoryId,
         selection_criteria: selectionCriteria.trim() || null,
       })
       .eq('id', itemId)
@@ -133,11 +145,12 @@ export default function ItemEditForm({
         onChange={(e) => setName(e.target.value)}
       />
       <Autocomplete
-        options={categoryOptions(items)}
+        options={categoryOptions(categories)}
         value={category}
         onChange={setCategory}
         placeholder="Category (e.g. produce, dairy)"
       />
+      {newCategory && <p className="field-note">New category</p>}
       <textarea
         placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
         value={selectionCriteria}
@@ -166,6 +179,7 @@ export default function ItemEditForm({
       </div>
 
       {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
+      {error && <p className="field-hint">{error}</p>}
 
       <p className="field-label">Brands</p>
       {brandRows.map((row) => (

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import ItemEditForm from './ItemEditForm'
 import NewItemDialog from './NewItemDialog'
+import CategoryManager from './CategoryManager'
 import { createItem } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 
 export default function CatalogView({
   items,
+  categories,
   itemStores,
   brands,
   stores,
@@ -15,6 +17,9 @@ export default function CatalogView({
   const [editingId, setEditingId] = useState(null) // item id, or null
   const [creating, setCreating] = useState(false)
   const [search, setSearch] = useState('')
+  const [managingCategories, setManagingCategories] = useState(false)
+
+  const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
 
   const filtered = items
     .filter((i) => i.name.toLowerCase().includes(search.trim().toLowerCase()))
@@ -35,7 +40,7 @@ export default function CatalogView({
 
   // Called by the dialog; returns an error message, or nothing on success.
   async function handleCreate(details) {
-    const { error } = await createItem(details)
+    const { error } = await createItem(details, categories)
     if (error) return error
     setCreating(false)
     onChanged()
@@ -51,11 +56,23 @@ export default function CatalogView({
         />
         <button onClick={() => setCreating(true)}>+ New item</button>
       </div>
+      <button
+        type="button"
+        className="link-button catalog-manage-toggle"
+        onClick={() => setManagingCategories((open) => !open)}
+      >
+        {managingCategories ? 'Done managing categories' : 'Manage categories'}
+      </button>
+
+      {managingCategories && (
+        <CategoryManager categories={categories} items={items} onChanged={onChanged} />
+      )}
 
       {creating && (
         <NewItemDialog
           initialName={search.trim()}
           items={items}
+          categories={categories}
           stores={stores}
           submitLabel="Save item"
           onSave={handleCreate}
@@ -79,14 +96,16 @@ export default function CatalogView({
                   </span>
                 )}
               </span>
-              <span className="item-category">{item.category}</span>
+              <span className="item-category">
+                {categoriesById[item.category_id]?.name || 'uncategorized'}
+              </span>
             </button>
 
             {editingId === item.id && (
               <div className="catalog-edit-panel">
                 <ItemEditForm
                   item={item}
-                  items={items}
+                  categories={categories}
                   stores={stores}
                   storeIds={storeIdsFor(item.id)}
                   brands={brandsFor(item.id)}

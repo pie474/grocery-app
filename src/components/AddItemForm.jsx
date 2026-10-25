@@ -9,6 +9,7 @@ const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
 export default function AddItemForm({
   items,
+  categories,
   stores,
   itemStores = [],
   members = [],
@@ -70,7 +71,7 @@ export default function AddItemForm({
   async function handleCreate(details) {
     const result = existing
       ? await linkStores(existing.id, details.stores)
-      : await createItem(details)
+      : await createItem(details, categories)
     if (result.error) return result.error
     if (!(await addToList(result.itemId))) return "Couldn't add it to the list. Try again."
     setDialogOpen(false)
@@ -149,6 +150,7 @@ export default function AddItemForm({
           initialName={name.trim()}
           existing={existing}
           items={items}
+          categories={categories}
           stores={stores}
           onSave={handleCreate}
           onStoreAdded={onStoreAdded}

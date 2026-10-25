@@ -22,11 +22,23 @@ create table stores (
   chain text
 );
 
+-- one row per category, so every item in "Dairy" points at the same row
+-- and a rename or merge happens in one place
+create table categories (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid references households(id) on delete cascade,
+  name text not null
+);
+
+-- names are unique per household, ignoring case
+create unique index categories_household_name_key
+  on categories (household_id, lower(name));
+
 create table items (
   id uuid primary key default gen_random_uuid(),
   household_id uuid references households(id) on delete cascade,
   name text not null,
-  category text default 'uncategorized',
+  category_id uuid references categories(id) on delete set null, -- null = uncategorized
   unit text,
   selection_criteria text, -- e.g. "firm, deep green, slight give at the stem"
   last_bought_at timestamptz
@@ -65,6 +77,7 @@ alter publication supabase_realtime add table list_entries;
 alter publication supabase_realtime add table items;
 alter publication supabase_realtime add table stores;
 alter publication supabase_realtime add table item_brands;
+alter publication supabase_realtime add table categories;
 
 -- Row Level Security: this starter uses one shared household id (from
 -- .env) as the access boundary rather than per-user auth, since a family
@@ -73,10 +86,16 @@ alter publication supabase_realtime add table item_brands;
 alter table households enable row level security;
 alter table members enable row level security;
 alter table stores enable row level security;
+alter table categories enable row level security;
 alter table items enable row level security;
 alter table item_stores enable row level security;
 alter table item_brands enable row level security;
 alter table list_entries enable row level security;
+
+create policy "household read" on categories for select using (true);
+create policy "household write" on categories for insert with check (true);
+create policy "household update" on categories for update using (true);
+create policy "household delete" on categories for delete using (true);
 
 create policy "household read" on items for select using (true);
 create policy "household write" on items for insert with check (true);

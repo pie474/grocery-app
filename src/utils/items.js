@@ -14,13 +14,19 @@ export async function linkStores(itemId, storeIds) {
   return { itemId }
 }
 
-export async function createItem(details) {
+export async function createItem(details, categories) {
+  const { categoryId, error: categoryError } = await resolveCategory(
+    categories,
+    details.category,
+  )
+  if (categoryError) return { error: categoryError }
+
   const { data: newItem, error } = await supabase
     .from('items')
     .insert({
       household_id: HOUSEHOLD_ID,
       name: details.name,
-      category: details.category.trim() || 'uncategorized',
+      category_id: categoryId,
       selection_criteria: details.selectionCriteria.trim() || null,
     })
     .select()
@@ -43,10 +49,42 @@ export async function createItem(details) {
   return linkStores(newItem.id, details.stores)
 }
 
-// Distinct categories already in the catalog, shaped as Autocomplete options.
-export function categoryOptions(items) {
-  const names = new Set(
-    items.map((i) => i.category?.trim()).filter((c) => c && c !== 'uncategorized'),
-  )
-  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ id: name, name }))
+// Categories rows already have the { id, name } shape Autocomplete wants.
+export function categoryOptions(categories) {
+  return [...categories].sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function findCategory(categories, name) {
+  const key = name.trim().toLowerCase()
+  return categories.find((c) => c.name.toLowerCase() === key)
+}
+
+// Turns a typed category name into a category id: an existing category
+// whose name matches (ignoring case), or a new one. A blank name, or
+// "uncategorized", means no category. Returns { categoryId } or { error }.
+export async function resolveCategory(categories, name) {
+  const trimmed = name.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'uncategorized') return { categoryId: null }
+
+  const match = findCategory(categories, trimmed)
+  if (match) return { categoryId: match.id }
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert({ household_id: HOUSEHOLD_ID, name: trimmed })
+    .select()
+    .single()
+  if (!error) return { categoryId: data.id }
+
+  // someone else created the same name since our last load
+  if (error.code === '23505') {
+    const { data: fresh } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('household_id', HOUSEHOLD_ID)
+    const created = findCategory(fresh || [], trimmed)
+    if (created) return { categoryId: created.id }
+  }
+  console.error(error)
+  return { error: "Couldn't save the category. Try again." }
 }
