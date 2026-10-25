@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 
 function makeBrandRow(brand) {
@@ -30,6 +31,7 @@ export default function ItemEditForm({
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
   )
   const [saving, setSaving] = useState(false)
+  const [uploadsInFlight, setUploadsInFlight] = useState(0)
 
   function toggleStore(storeId) {
     setSelectedStores((prev) =>
@@ -102,11 +104,13 @@ export default function ItemEditForm({
     // Sync brands: replace the full set for this item (simplest to reason
     // about, and brand lists are short).
     await supabase.from('item_brands').delete().eq('item_id', itemId)
+    // a row with a photo but no brand name is saved under the item's own
+    // name, the same as in NewItemDialog
     const brandsToInsert = brandRows
-      .filter((r) => r.brand_name.trim())
+      .filter((r) => r.brand_name.trim() || r.image_url)
       .map((r) => ({
         item_id: itemId,
-        brand_name: r.brand_name.trim(),
+        brand_name: r.brand_name.trim() || name.trim(),
         image_url: r.image_url.trim() || null,
         is_preferred: r.is_preferred,
       }))
@@ -167,10 +171,11 @@ export default function ItemEditForm({
             value={row.brand_name}
             onChange={(e) => updateBrandRow(row.key, 'brand_name', e.target.value)}
           />
-          <input
-            placeholder="Image URL"
-            value={row.image_url}
-            onChange={(e) => updateBrandRow(row.key, 'image_url', e.target.value)}
+          <PhotoPicker
+            imageUrl={row.image_url}
+            onChange={(url) => updateBrandRow(row.key, 'image_url', url)}
+            onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
+            removable
           />
           <label className="preferred-toggle">
             <input
@@ -195,7 +200,10 @@ export default function ItemEditForm({
       </button>
 
       <div className="form-actions">
-        <button type="submit" disabled={saving || !name.trim() || missingStores}>
+        <button
+          type="submit"
+          disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
+        >
           Save changes
         </button>
         <button type="button" className="secondary-button" onClick={onCancel}>
