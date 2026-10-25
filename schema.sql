@@ -98,7 +98,6 @@ create policy "household delete" on item_stores for delete using (true);
 
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
-create policy "household update" on item_brands for update using (true);
 create policy "household delete" on item_brands for delete using (true);
 
 -- Item photos: a public bucket (the URL is what gets saved on item_brands).
