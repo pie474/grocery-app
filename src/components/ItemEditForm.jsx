@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
-import { existingCategories } from '../utils/items'
+import Autocomplete from './Autocomplete'
+import { categoryOptions } from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -131,17 +132,12 @@ export default function ItemEditForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <input
-        placeholder="Category (e.g. produce, dairy)"
-        list={`item-categories-${item.id}`}
+      <Autocomplete
+        options={categoryOptions(items)}
         value={category}
-        onChange={(e) => setCategory(e.target.value)}
+        onChange={setCategory}
+        placeholder="Category (e.g. produce, dairy)"
       />
-      <datalist id={`item-categories-${item.id}`}>
-        {existingCategories(items).map((c) => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
       <textarea
         placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
         value={selectionCriteria}

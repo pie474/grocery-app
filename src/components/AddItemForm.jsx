@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
-import ItemAutocomplete from './ItemAutocomplete'
+import Autocomplete from './Autocomplete'
 import NewItemDialog from './NewItemDialog'
 import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
@@ -89,11 +89,16 @@ export default function AddItemForm({
     <>
       <form className="add-item-form" onSubmit={handleSubmit}>
         <div className="add-item-row">
-          <ItemAutocomplete
-            items={items}
+          <Autocomplete
+            options={items}
             value={name}
             onChange={setName}
             placeholder="Add an item…"
+            renderMeta={(item) =>
+              item.last_bought_at
+                ? `bought ${formatRelativeTime(item.last_bought_at)}`
+                : 'never bought'
+            }
           />
           <button type="submit" disabled={saving || !name.trim()}>
             Add
