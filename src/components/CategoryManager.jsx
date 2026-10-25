@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { categoryOptions } from '../utils/items'
 
@@ -131,9 +131,19 @@ function CategoryRow({ category, categories, count, onChanged }) {
   )
 }
 
-// Rename, merge and delete categories. Merging moves every item in one
-// category into another and deletes the empty one.
-export default function CategoryManager({ categories, items, onChanged }) {
+// Modal for renaming, merging and deleting categories. Merging moves every
+// item in one category into another and deletes the empty one.
+export default function CategoryManager({ categories, items, onChanged, onClose }) {
+  const dialogRef = useRef(null)
+  const doneRef = useRef(null)
+
+  useEffect(() => {
+    dialogRef.current?.showModal()
+    // showModal focuses the first input, which would pop the keyboard
+    // open on phones before anyone has picked a category to edit
+    doneRef.current?.focus()
+  }, [])
+
   const counts = items.reduce((acc, item) => {
     if (item.category_id) acc[item.category_id] = (acc[item.category_id] || 0) + 1
     return acc
@@ -141,27 +151,48 @@ export default function CategoryManager({ categories, items, onChanged }) {
   const uncategorized = items.filter((i) => !i.category_id).length
 
   return (
-    <section className="category-manager">
-      {categories.length ? (
-        <ul className="category-rows">
-          {categoryOptions(categories).map((category) => (
-            <CategoryRow
-              key={category.id}
-              category={category}
-              categories={categories}
-              count={counts[category.id] || 0}
-              onChanged={onChanged}
-            />
-          ))}
-        </ul>
-      ) : (
-        <p className="field-note">
-          No categories yet. Add one by typing it into an item's Category field.
-        </p>
-      )}
-      {uncategorized > 0 && (
-        <p className="field-note">{itemCountLabel(uncategorized)} uncategorized</p>
-      )}
-    </section>
+    <dialog
+      ref={dialogRef}
+      className="item-dialog"
+      aria-labelledby="category-manager-title"
+      onCancel={(e) => {
+        e.preventDefault()
+        onClose()
+      }}
+      onClick={(e) => {
+        // a click on the backdrop lands on the <dialog> itself
+        if (e.target === dialogRef.current) onClose()
+      }}
+    >
+      <div className="category-manager">
+        <h2 id="category-manager-title">Categories</h2>
+        {categories.length ? (
+          <ul className="category-rows">
+            {categoryOptions(categories).map((category) => (
+              <CategoryRow
+                key={category.id}
+                category={category}
+                categories={categories}
+                count={counts[category.id] || 0}
+                onChanged={onChanged}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="field-note">
+            No categories yet. Add one by typing it into an item's Category field.
+          </p>
+        )}
+        {uncategorized > 0 && (
+          <p className="field-note">{itemCountLabel(uncategorized)} uncategorized</p>
+        )}
+
+        <div className="form-actions">
+          <button ref={doneRef} type="button" onClick={onClose}>
+            Done
+          </button>
+        </div>
+      </div>
+    </dialog>
   )
 }

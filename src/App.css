@@ -509,11 +509,13 @@ button:disabled {
 .category-manager {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-  background: #f1efe8;
-  border-radius: 8px;
+  gap: 12px;
+  padding: 16px;
+}
+
+.category-manager h2 {
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 .category-rows {
