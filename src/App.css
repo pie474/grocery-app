@@ -105,6 +105,12 @@ header h1 {
   font-size: 0.82rem;
 }
 
+.field-note {
+  margin: 0;
+  color: #6b6a63;
+  font-size: 0.82rem;
+}
+
 .add-item-form {
   margin-bottom: 24px;
   display: flex;
@@ -242,6 +248,12 @@ button:disabled {
 .field-hint {
   margin: 0;
   color: #a33;
+  font-size: 0.82rem;
+}
+
+.field-note {
+  margin: 0;
+  color: #6b6a63;
   font-size: 0.82rem;
 }
 
@@ -486,6 +498,66 @@ button:disabled {
 
 .catalog-header input {
   flex: 1;
+}
+
+.catalog-manage-toggle {
+  margin-bottom: 12px;
+}
+
+/* Category manager */
+
+.category-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: #f1efe8;
+  border-radius: 8px;
+}
+
+.category-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.category-row-main {
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-row-main input {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-count {
+  flex: none;
+  color: #6b6a63;
+  font-size: 0.8rem;
+}
+
+.category-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-row .field-hint {
+  flex-basis: 100%;
 }
 
 .catalog-row {

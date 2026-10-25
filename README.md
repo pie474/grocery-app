@@ -11,7 +11,9 @@ Supabase.
    run everything in `schema.sql`. This also creates the public
    `item-photos` storage bucket used for item photos. If you set up
    before photos existed, run just the `item-photos` bucket/policy
-   statements from `schema.sql`.
+   statements from `schema.sql`. If you set up before categories were
+   their own table, run `migrations/001_categories.sql` instead of
+   re-running the schema.
 3. **Create your household row** — in the Supabase table editor, add one
    row to `households` (any name), then copy its `id`.
 4. **Add your stores** — add a few rows to `stores` (e.g. "Trader Joe's",
@@ -47,7 +49,9 @@ a "last bought" timestamp per item shown in the item detail and Catalog
 view, a dedicated **Bought** tab to browse purchase history with "move
 back to list" or permanent delete, and a full **Catalog** tab to browse,
 search, create, edit, and delete every item in the database — including
-its stores, brand list, and selection criteria.
+its stores, brand list, and selection criteria. Categories are shared
+records: typing one reuses an existing match (ignoring case), and
+**Manage categories** in the Catalog tab renames, merges, or deletes them.
 
 Reasonable next steps, not built yet:
 - Auto-detecting which store you're at via geolocation instead of tapping

@@ -6,6 +6,7 @@ import { formatRelativeTime } from '../utils/time'
 export default function ItemList({
   entries,
   items,
+  categories,
   itemStores,
   brands,
   members = [],
@@ -19,6 +20,7 @@ export default function ItemList({
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
   const membersById = Object.fromEntries(members.map((m) => [m.id, m]))
+  const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
 
   const visibleEntries = entries.filter((entry) => {
     if (entry.status === 'got') return false
@@ -29,7 +31,8 @@ export default function ItemList({
   })
 
   const grouped = visibleEntries.reduce((acc, entry) => {
-    const category = itemsById[entry.item_id]?.category || 'uncategorized'
+    const categoryId = itemsById[entry.item_id]?.category_id
+    const category = categoriesById[categoryId]?.name || 'uncategorized'
     acc[category] = acc[category] || []
     acc[category].push(entry)
     return acc

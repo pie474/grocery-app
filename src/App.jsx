@@ -10,6 +10,7 @@ import UndoToast from './components/UndoToast'
 export default function App() {
   const [stores, setStores] = useState([])
   const [items, setItems] = useState([])
+  const [categories, setCategories] = useState([])
   const [itemStores, setItemStores] = useState([])
   const [brands, setBrands] = useState([])
   const [entries, setEntries] = useState([])
@@ -21,10 +22,18 @@ export default function App() {
   const toastTimeoutRef = useRef(null)
 
   const loadAll = useCallback(async () => {
-    const [storesRes, itemsRes, itemStoresRes, brandsRes, entriesRes, membersRes] =
-      await Promise.all([
+    const [
+      storesRes,
+      itemsRes,
+      categoriesRes,
+      itemStoresRes,
+      brandsRes,
+      entriesRes,
+      membersRes,
+    ] = await Promise.all([
         supabase.from('stores').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('items').select('*').eq('household_id', HOUSEHOLD_ID),
+        supabase.from('categories').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('item_stores').select('*'),
         supabase.from('item_brands').select('*'),
         supabase
@@ -37,6 +46,7 @@ export default function App() {
 
     setStores(storesRes.data || [])
     setItems(itemsRes.data || [])
+    setCategories(categoriesRes.data || [])
     setItemStores(itemStoresRes.data || [])
     setBrands(brandsRes.data || [])
     setEntries(entriesRes.data || [])
@@ -64,6 +74,11 @@ export default function App() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'stores' },
+        () => loadAll(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
         () => loadAll(),
       )
       .subscribe()
@@ -196,6 +211,7 @@ export default function App() {
 
           <AddItemForm
             items={items}
+            categories={categories}
             stores={stores}
             itemStores={itemStores}
             members={members}
@@ -206,6 +222,7 @@ export default function App() {
           <ItemList
             entries={entries}
             items={items}
+            categories={categories}
             itemStores={itemStores}
             brands={brands}
             members={members}
@@ -230,6 +247,7 @@ export default function App() {
       {view === 'catalog' && (
         <CatalogView
           items={items}
+          categories={categories}
           itemStores={itemStores}
           brands={brands}
           stores={stores}

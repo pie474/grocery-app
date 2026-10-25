@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 import Autocomplete from './Autocomplete'
-import { categoryOptions } from '../utils/items'
+import { categoryOptions, findCategory } from '../utils/items'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
@@ -13,6 +13,7 @@ export default function NewItemDialog({
   initialName,
   existing,
   items,
+  categories,
   stores,
   onSave,
   onClose,
@@ -37,6 +38,7 @@ export default function NewItemDialog({
   const trimmedName = name.trim()
   const duplicate =
     !existing && items.some((i) => i.name.toLowerCase() === trimmedName.toLowerCase())
+  const newCategory = !!category.trim() && !findCategory(categories, category)
   const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving && !photoBusy
 
   function toggleStore(storeId) {
@@ -121,11 +123,12 @@ export default function NewItemDialog({
             <label className="dialog-field">
               <span className="field-label">Category</span>
               <Autocomplete
-                options={categoryOptions(items)}
+                options={categoryOptions(categories)}
                 value={category}
                 onChange={setCategory}
                 placeholder="e.g. produce, dairy"
               />
+              {newCategory && <span className="field-note">New category</span>}
             </label>
             <label className="dialog-field">
               <span className="field-label">Preferred brand</span>
