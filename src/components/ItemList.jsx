@@ -11,6 +11,8 @@ export default function ItemList({
   activeStoreId,
   onMarkBought,
   onDelete,
+  isNew,
+  onSeen,
   onChanged,
 }) {
   const [expandedId, setExpandedId] = useState(null)
@@ -48,10 +50,15 @@ export default function ItemList({
             const itemBrands = brands.filter((b) => b.item_id === entry.item_id)
             const isExpanded = expandedId === entry.id
             const addedByName = membersById[entry.added_by]?.name
+            const highlighted = !!isNew?.(entry)
             const isEditing = editingId === entry.id
 
             return (
-              <div key={entry.id} className="list-row">
+              <div
+                key={entry.id}
+                className={highlighted ? 'list-row is-new' : 'list-row'}
+                onClick={highlighted ? () => onSeen?.(entry.id) : undefined}
+              >
                 <div className="list-row-main">
                   <button
                     className="item-name"
@@ -59,6 +66,7 @@ export default function ItemList({
                   >
                     {item?.name}
                   </button>
+                  {highlighted && <span className="new-badge">New</span>}
                   {entry.quantity && <span className="quantity">{entry.quantity}</span>}
                   <button
                     type="button"
