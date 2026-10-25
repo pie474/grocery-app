@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
 import EntryEditForm from './EntryEditForm'
+import { formatRelativeTime } from '../utils/time'
 
 export default function ItemList({
   entries,
@@ -100,7 +101,10 @@ export default function ItemList({
                   <div className="list-row-meta">
                     {entry.note && <span className="entry-note">{entry.note}</span>}
                     {addedByName && (
-                      <span className="entry-added-by">added by {addedByName}</span>
+                      <span className="entry-added-by">
+                        added by {addedByName}
+                        {entry.created_at && ` · ${formatRelativeTime(entry.created_at)}`}
+                      </span>
                     )}
                   </div>
                 )}
