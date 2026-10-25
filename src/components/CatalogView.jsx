@@ -59,13 +59,18 @@ export default function CatalogView({
       <button
         type="button"
         className="link-button catalog-manage-toggle"
-        onClick={() => setManagingCategories((open) => !open)}
+        onClick={() => setManagingCategories(true)}
       >
-        {managingCategories ? 'Done managing categories' : 'Manage categories'}
+        Manage categories
       </button>
 
       {managingCategories && (
-        <CategoryManager categories={categories} items={items} onChanged={onChanged} />
+        <CategoryManager
+          categories={categories}
+          items={items}
+          onChanged={onChanged}
+          onClose={() => setManagingCategories(false)}
+        />
       )}
 
       {creating && (
