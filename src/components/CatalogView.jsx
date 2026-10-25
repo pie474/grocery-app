@@ -86,6 +86,7 @@ export default function CatalogView({
               <div className="catalog-edit-panel">
                 <ItemEditForm
                   item={item}
+                  items={items}
                   stores={stores}
                   storeIds={storeIdsFor(item.id)}
                   brands={brandsFor(item.id)}

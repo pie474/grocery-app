@@ -42,3 +42,11 @@ export async function createItem(details) {
 
   return linkStores(newItem.id, details.stores)
 }
+
+// Distinct categories already in the catalog, shaped as Autocomplete options.
+export function categoryOptions(items) {
+  const names = new Set(
+    items.map((i) => i.category?.trim()).filter((c) => c && c !== 'uncategorized'),
+  )
+  return [...names].sort((a, b) => a.localeCompare(b)).map((name) => ({ id: name, name }))
+}

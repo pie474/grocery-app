@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
+import Autocomplete from './Autocomplete'
+import { categoryOptions } from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -16,6 +18,7 @@ function makeBrandRow(brand) {
 // Edits an existing catalog item. New items are created in NewItemDialog.
 export default function ItemEditForm({
   item,
+  items,
   storeIds,
   brands,
   stores,
@@ -129,10 +132,11 @@ export default function ItemEditForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <input
-        placeholder="Category (e.g. produce, dairy)"
+      <Autocomplete
+        options={categoryOptions(items)}
         value={category}
-        onChange={(e) => setCategory(e.target.value)}
+        onChange={setCategory}
+        placeholder="Category (e.g. produce, dairy)"
       />
       <textarea
         placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"

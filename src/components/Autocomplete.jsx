@@ -1,18 +1,26 @@
 import { useState } from 'react'
-import { formatRelativeTime } from '../utils/time'
 
-export default function ItemAutocomplete({ items, value, onChange, onSelect, placeholder }) {
+// Text input with a dropdown of matching options. Each option needs an `id`
+// and a `name`; renderMeta(option) adds optional detail on the right.
+export default function Autocomplete({
+  options,
+  value,
+  onChange,
+  onSelect,
+  placeholder,
+  renderMeta,
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
 
   const query = value.trim().toLowerCase()
   const matches = query
-    ? items.filter((i) => i.name.toLowerCase().includes(query)).slice(0, 8)
+    ? options.filter((o) => o.name.toLowerCase().includes(query)).slice(0, 8)
     : []
 
-  function selectItem(item) {
-    onChange(item.name)
-    onSelect?.(item)
+  function selectOption(option) {
+    onChange(option.name)
+    onSelect?.(option)
     setIsOpen(false)
     setHighlighted(-1)
   }
@@ -27,7 +35,7 @@ export default function ItemAutocomplete({ items, value, onChange, onSelect, pla
       setHighlighted((h) => (h <= 0 ? matches.length - 1 : h - 1))
     } else if (e.key === 'Enter' && highlighted >= 0) {
       e.preventDefault()
-      selectItem(matches[highlighted])
+      selectOption(matches[highlighted])
     } else if (e.key === 'Escape') {
       setIsOpen(false)
       setHighlighted(-1)
@@ -54,23 +62,19 @@ export default function ItemAutocomplete({ items, value, onChange, onSelect, pla
       />
       {isOpen && matches.length > 0 && (
         <ul className="autocomplete-list" role="listbox">
-          {matches.map((item, i) => (
+          {matches.map((option, i) => (
             <li
-              key={item.id}
+              key={option.id}
               role="option"
               aria-selected={i === highlighted}
               className={i === highlighted ? 'autocomplete-option active' : 'autocomplete-option'}
               onMouseDown={(e) => {
                 e.preventDefault() // keep the input focused; fires before blur
-                selectItem(item)
+                selectOption(option)
               }}
             >
-              <span>{item.name}</span>
-              <span className="autocomplete-meta">
-                {item.last_bought_at
-                  ? `bought ${formatRelativeTime(item.last_bought_at)}`
-                  : 'never bought'}
-              </span>
+              <span>{option.name}</span>
+              {renderMeta && <span className="autocomplete-meta">{renderMeta(option)}</span>}
             </li>
           ))}
         </ul>
