@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
+import { existingCategories } from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -16,6 +17,7 @@ function makeBrandRow(brand) {
 // Edits an existing catalog item. New items are created in NewItemDialog.
 export default function ItemEditForm({
   item,
+  items,
   storeIds,
   brands,
   stores,
@@ -131,9 +133,15 @@ export default function ItemEditForm({
       />
       <input
         placeholder="Category (e.g. produce, dairy)"
+        list={`item-categories-${item.id}`}
         value={category}
         onChange={(e) => setCategory(e.target.value)}
       />
+      <datalist id={`item-categories-${item.id}`}>
+        {existingCategories(items).map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
       <textarea
         placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
         value={selectionCriteria}

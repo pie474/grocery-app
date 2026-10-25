@@ -42,3 +42,11 @@ export async function createItem(details) {
 
   return linkStores(newItem.id, details.stores)
 }
+
+// Distinct categories already in the catalog, for suggesting as you type.
+export function existingCategories(items) {
+  const names = new Set(
+    items.map((i) => i.category?.trim()).filter((c) => c && c !== 'uncategorized'),
+  )
+  return [...names].sort((a, b) => a.localeCompare(b))
+}

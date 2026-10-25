@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
+import { existingCategories } from '../utils/items'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
@@ -120,9 +121,15 @@ export default function NewItemDialog({
               <span className="field-label">Category</span>
               <input
                 placeholder="e.g. produce, dairy"
+                list="new-item-categories"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               />
+              <datalist id="new-item-categories">
+                {existingCategories(items).map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </label>
             <label className="dialog-field">
               <span className="field-label">Preferred brand</span>
