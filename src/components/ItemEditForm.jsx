@@ -104,11 +104,13 @@ export default function ItemEditForm({
     // Sync brands: replace the full set for this item (simplest to reason
     // about, and brand lists are short).
     await supabase.from('item_brands').delete().eq('item_id', itemId)
+    // a row with a photo but no brand name is saved under the item's own
+    // name, the same as in NewItemDialog
     const brandsToInsert = brandRows
-      .filter((r) => r.brand_name.trim())
+      .filter((r) => r.brand_name.trim() || r.image_url)
       .map((r) => ({
         item_id: itemId,
-        brand_name: r.brand_name.trim(),
+        brand_name: r.brand_name.trim() || name.trim(),
         image_url: r.image_url.trim() || null,
         is_preferred: r.is_preferred,
       }))

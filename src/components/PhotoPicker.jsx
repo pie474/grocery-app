@@ -48,7 +48,7 @@ export default function PhotoPicker({
       </button>
       {removable && imageUrl && !uploading && (
         <button type="button" className="icon-button" onClick={() => onChange('')}>
-          Remove
+          Remove photo
         </button>
       )}
       <input
