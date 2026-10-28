@@ -36,6 +36,11 @@ Supabase.
 8. **Share it with family:** deploy the `dist/` build (e.g. to Vercel or
    Netlify, free tier) and send everyone the link — they'll all read/write
    the same household id, so no login screen is needed.
+9. **Install it like an app (optional):** the build is a PWA. On Android,
+   Chrome offers "Install app"; on iPhone, open the link in Safari and tap
+   Share → Add to Home Screen. Installed copies pick up new deploys on
+   their own, usually from the next launch. To change the icon, replace
+   `public/icon.svg` and the PNGs next to it.
 
 ## What's here vs. what's next
 
