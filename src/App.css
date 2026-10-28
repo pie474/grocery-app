@@ -13,6 +13,9 @@ body {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
+  /* clear the notch / home bar when installed with viewport-fit=cover */
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 header h1 {
@@ -389,6 +392,7 @@ button:disabled {
   left: 16px;
   right: 16px;
   bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
   max-width: 448px;
   margin: 0 auto;
   background: #1c1c1a;
