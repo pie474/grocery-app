@@ -242,36 +242,55 @@ export default function App() {
     })
   }
 
-  async function handleMoveBack(entry) {
-    patchEntry(entry.id, { status: 'needed', bought_at: null })
-    const { error } = await supabase
-      .from('list_entries')
-      .update({ status: 'needed', bought_at: null })
-      .eq('id', entry.id)
-    if (error) {
-      console.error(error)
-      patchEntry(entry.id, { status: entry.status, bought_at: entry.bought_at })
-      showError("Couldn't move it back to the list. Check your connection and try again.")
-      return
-    }
-    await recomputeLastBought(entry.item_id)
+  function countLabel(count) {
+    return count === 1 ? 'this purchase record' : `these ${count} purchase records`
   }
 
-  async function handleDeleteForever(entry) {
-    const item = items.find((i) => i.id === entry.item_id)
-    const confirmed = confirm(
-      `Permanently delete this purchase record${item ? ` for "${item.name}"` : ''}? This can't be undone.`,
+  // The Bought tab's actions take a list of entries so a single row and a
+  // multi-select batch share one path. Each updates the screen right
+  // away and returns false only if the user backed out at the confirm.
+  function handleMoveBack(selected) {
+    const ids = selected.map((e) => e.id)
+    setEntries((prev) =>
+      prev.map((e) => (ids.includes(e.id) ? { ...e, status: 'needed', bought_at: null } : e)),
     )
-    if (!confirmed) return
-    removeEntryLocally(entry.id)
-    const { error } = await supabase.from('list_entries').delete().eq('id', entry.id)
+    saveInBackground(
+      () => supabase.from('list_entries').update({ status: 'needed', bought_at: null }).in('id', ids),
+      selected,
+      selected.length === 1
+        ? "Couldn't move it back to the list. Check your connection and try again."
+        : "Couldn't move them back to the list. Check your connection and try again.",
+    )
+    return true
+  }
+
+  function handleDeleteForever(selected) {
+    const item = selected.length === 1 && items.find((i) => i.id === selected[0].item_id)
+    const confirmed = confirm(
+      `Permanently delete ${countLabel(selected.length)}${item ? ` for "${item.name}"` : ''}? This can't be undone.`,
+    )
+    if (!confirmed) return false
+    const ids = selected.map((e) => e.id)
+    setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
+    saveInBackground(
+      () => supabase.from('list_entries').delete().in('id', ids),
+      selected,
+      "Couldn't delete. Check your connection and try again.",
+    )
+    return true
+  }
+
+  // Runs a save after the screen has already been updated; on failure
+  // puts the entries back as they were and says so.
+  async function saveInBackground(save, originals, errorMessage) {
+    const { error } = await save()
     if (error) {
       console.error(error)
-      restoreEntry(entry)
-      showError("Couldn't delete it. Check your connection and try again.")
+      originals.forEach(restoreEntry)
+      showError(errorMessage)
       return
     }
-    await recomputeLastBought(entry.item_id)
+    await Promise.all([...new Set(originals.map((e) => e.item_id))].map(recomputeLastBought))
   }
 
   function retryLoad() {

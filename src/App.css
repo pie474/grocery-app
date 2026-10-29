@@ -503,31 +503,146 @@ button:disabled {
 
 /* Bought view */
 
-.bought-row {
-  border-bottom: 1px solid #ece9e0;
-  padding: 10px 0;
-}
-
-.bought-row-main {
+.bought-toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 
-.bought-row-main .item-name {
-  flex: 1;
-  font-weight: 500;
+.bought-toolbar button {
+  min-height: 44px;
 }
 
-.bought-row-actions {
+.bought-toolbar .link-button {
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.bought-toolbar-count {
+  color: #6b6a63;
+  font-size: 0.88rem;
+}
+
+.bought-row {
   display: flex;
+  align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  min-height: 60px;
+  border-bottom: 1px solid #ece9e0;
 }
 
-.bought-row-actions button {
-  font-size: 0.82rem;
-  padding: 6px 10px;
+.bought-row.selected {
+  background: #eef4ee;
+}
+
+.bought-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.bought-row-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* padded out to a 44px tap target */
+.bought-row-select input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 11px;
+  margin-left: 1px;
+  accent-color: #2f6f4f;
+}
+
+/* room for the fixed batch bar below the last row */
+.bought-view.selecting {
+  padding-bottom: 88px;
+}
+
+.batch-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: #fafaf8;
+  border-top: 1px solid #ece9e0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.batch-bar button {
+  flex: 1;
+  max-width: 220px;
+  min-height: 44px;
+}
+
+/* Row "⋯" menu */
+
+.row-menu {
+  position: relative;
+  flex: none;
+}
+
+.row-menu-button {
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  background: none;
+  color: #6b6a63;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.row-menu-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #d8d5cc;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.row-menu-list.up {
+  top: auto;
+  bottom: calc(100% + 2px);
+}
+
+.row-menu-list button {
+  min-height: 44px;
+  padding: 0 12px;
+  background: none;
+  color: #1c1c1a;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.row-menu-list button:hover,
+.row-menu-list button:focus-visible {
+  background: #f1efe8;
+}
+
+.row-menu-list .row-menu-danger {
+  color: #a33;
 }
 
 .item-detail {
