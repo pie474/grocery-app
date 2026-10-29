@@ -18,6 +18,13 @@ export default function ItemList({
   const [expandedId, setExpandedId] = useState(null)
   const [editingId, setEditingId] = useState(null)
 
+  // Edit and Remove live in the expanded panel, so the row itself only
+  // has the one action people use most in the store: checking it off.
+  function toggleExpanded(entryId) {
+    setExpandedId(expandedId === entryId ? null : entryId)
+    setEditingId(null)
+  }
+
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
   const membersById = Object.fromEntries(members.map((m) => [m.id, m]))
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
@@ -58,61 +65,74 @@ export default function ItemList({
               <div key={entry.id} className="list-row">
                 <div className="list-row-main">
                   <button
-                    className="item-name"
-                    onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                  >
-                    {item?.name}
-                  </button>
-                  {entry.quantity && <span className="quantity">{entry.quantity}</span>}
-                  <button
                     type="button"
-                    className="bought-button"
+                    className="check-button"
+                    aria-label={`Mark ${item?.name} as bought`}
                     onClick={() => onMarkBought(entry, item)}
                   >
-                    Bought
+                    <span className="check-circle" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
-                    className="edit-button"
-                    aria-label={`Edit ${item?.name}`}
-                    onClick={() => setEditingId(isEditing ? null : entry.id)}
+                    className="list-row-toggle"
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleExpanded(entry.id)}
                   >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="delete-button"
-                    aria-label={`Remove ${item?.name} from the list`}
-                    onClick={() => onDelete(entry, item)}
-                  >
-                    ✕
+                    <span className="list-row-text">
+                      <span className="list-row-title">
+                        <span className="item-name">{item?.name}</span>
+                        {entry.quantity && <span className="quantity">{entry.quantity}</span>}
+                      </span>
+                      {(entry.note || addedByName) && (
+                        <span className="list-row-meta">
+                          {entry.note && <span className="entry-note">{entry.note}</span>}
+                          {addedByName && (
+                            <span className="entry-added-by">
+                              added by {addedByName}
+                              {entry.created_at && ` · ${formatRelativeTime(entry.created_at)}`}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </span>
+                    <span className="chevron" aria-hidden="true" />
                   </button>
                 </div>
-                {isEditing && (
-                  <EntryEditForm
-                    entry={entry}
-                    itemName={item?.name}
-                    members={members}
-                    onSaved={() => {
-                      setEditingId(null)
-                      onChanged?.()
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                )}
-                {!isEditing && (entry.note || addedByName) && (
-                  <div className="list-row-meta">
-                    {entry.note && <span className="entry-note">{entry.note}</span>}
-                    {addedByName && (
-                      <span className="entry-added-by">
-                        added by {addedByName}
-                        {entry.created_at && ` · ${formatRelativeTime(entry.created_at)}`}
-                      </span>
+                {isExpanded && (
+                  <div className="list-row-panel">
+                    {isEditing ? (
+                      <EntryEditForm
+                        entry={entry}
+                        itemName={item?.name}
+                        members={members}
+                        onSaved={() => {
+                          setEditingId(null)
+                          onChanged?.()
+                        }}
+                        onCancel={() => setEditingId(null)}
+                      />
+                    ) : (
+                      <>
+                        {item && <ItemDetail item={item} brands={itemBrands} />}
+                        <div className="list-row-actions">
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => setEditingId(entry.id)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="danger-button"
+                            onClick={() => onDelete(entry, item)}
+                          >
+                            Remove from list
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
-                )}
-                {isExpanded && item && (
-                  <ItemDetail item={item} brands={itemBrands} />
                 )}
               </div>
             )

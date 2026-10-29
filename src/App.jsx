@@ -17,20 +17,14 @@ export default function App() {
   const [members, setMembers] = useState([])
   const [activeStoreId, setActiveStoreId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
   const [toast, setToast] = useState(null) // { message, undo }
   const toastTimeoutRef = useRef(null)
 
   const loadAll = useCallback(async () => {
-    const [
-      storesRes,
-      itemsRes,
-      categoriesRes,
-      itemStoresRes,
-      brandsRes,
-      entriesRes,
-      membersRes,
-    ] = await Promise.all([
+    const results = await Promise.all([
         supabase.from('stores').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('items').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('categories').select('*').eq('household_id', HOUSEHOLD_ID),
@@ -44,6 +38,25 @@ export default function App() {
         supabase.from('members').select('*').eq('household_id', HOUSEHOLD_ID),
       ])
 
+    const failed = results.find((res) => res.error)
+    if (failed) {
+      // Keep whatever is already on screen rather than blanking the list
+      // on a flaky connection.
+      console.error(failed.error)
+      setLoadError(true)
+      setLoading(false)
+      return
+    }
+
+    const [
+      storesRes,
+      itemsRes,
+      categoriesRes,
+      itemStoresRes,
+      brandsRes,
+      entriesRes,
+      membersRes,
+    ] = results
     setStores(storesRes.data || [])
     setItems(itemsRes.data || [])
     setCategories(categoriesRes.data || [])
@@ -51,6 +64,8 @@ export default function App() {
     setBrands(brandsRes.data || [])
     setEntries(entriesRes.data || [])
     setMembers(membersRes.data || [])
+    setLoadError(false)
+    setHasLoaded(true)
     setLoading(false)
   }, [])
 
@@ -83,16 +98,25 @@ export default function App() {
       )
       .subscribe()
 
+    // catch up on anything missed while the phone had no signal
+    window.addEventListener('online', loadAll)
+
     return () => {
       supabase.removeChannel(channel)
+      window.removeEventListener('online', loadAll)
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
     }
   }, [loadAll])
 
-  function showToast(message, undo) {
+  // undo: a function for an Undo button, or null for a plain message.
+  function showToast(message, undo, { error = false } = {}) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    setToast({ message, undo })
+    setToast({ message, undo, error })
     toastTimeoutRef.current = setTimeout(() => setToast(null), 6000)
+  }
+
+  function showError(message) {
+    showToast(message, null, { error: true })
   }
 
   function dismissToast() {
@@ -100,65 +124,137 @@ export default function App() {
     setToast(null)
   }
 
+  // Local edits so the screen updates on tap instead of after a round
+  // trip. Each handler below puts things back if the save fails.
+  function patchEntry(entryId, changes) {
+    setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...changes } : e)))
+  }
+
+  function patchItem(itemId, changes) {
+    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, ...changes } : i)))
+  }
+
+  function restoreEntry(entry) {
+    setEntries((prev) =>
+      [...prev.filter((e) => e.id !== entry.id), entry].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
+      ),
+    )
+  }
+
+  function removeEntryLocally(entryId) {
+    setEntries((prev) => prev.filter((e) => e.id !== entryId))
+  }
+
   // Keeps items.last_bought_at accurate after an undo or a permanent
   // delete of a purchase record, by looking at what's actually left.
   async function recomputeLastBought(itemId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('list_entries')
       .select('bought_at')
       .eq('item_id', itemId)
       .eq('status', 'got')
       .order('bought_at', { ascending: false })
       .limit(1)
-    await supabase
-      .from('items')
-      .update({ last_bought_at: data?.[0]?.bought_at || null })
-      .eq('id', itemId)
+    if (error) {
+      console.error(error)
+      return
+    }
+    const lastBoughtAt = data?.[0]?.bought_at || null
+    patchItem(itemId, { last_bought_at: lastBoughtAt })
+    await supabase.from('items').update({ last_bought_at: lastBoughtAt }).eq('id', itemId)
   }
 
-  async function handleMarkBought(entry, item) {
+  function handleMarkBought(entry, item) {
     const now = new Date().toISOString()
-    await supabase
-      .from('list_entries')
-      .update({ status: 'got', bought_at: now })
-      .eq('id', entry.id)
-    if (item) {
-      await supabase.from('items').update({ last_bought_at: now }).eq('id', item.id)
-    }
-    await loadAll()
-    showToast(`Marked "${item?.name}" as bought`, async () => {
-      await supabase
+    const name = item?.name || 'item'
+    patchEntry(entry.id, { status: 'got', bought_at: now })
+    if (item) patchItem(item.id, { last_bought_at: now })
+
+    // Resolves to whether the save worked, so Undo can wait for it
+    // instead of racing it.
+    const saved = (async () => {
+      const { error } = await supabase
+        .from('list_entries')
+        .update({ status: 'got', bought_at: now })
+        .eq('id', entry.id)
+      if (error) {
+        console.error(error)
+        patchEntry(entry.id, { status: entry.status, bought_at: entry.bought_at })
+        if (item) patchItem(item.id, { last_bought_at: item.last_bought_at })
+        showError(`Couldn't mark "${name}" as bought. Check your connection and try again.`)
+        return false
+      }
+      if (item) {
+        const { error: itemError } = await supabase
+          .from('items')
+          .update({ last_bought_at: now })
+          .eq('id', item.id)
+        if (itemError) console.error(itemError)
+      }
+      return true
+    })()
+
+    showToast(`Marked "${name}" as bought`, async () => {
+      if (!(await saved)) return
+      patchEntry(entry.id, { status: 'needed', bought_at: null })
+      if (item) patchItem(item.id, { last_bought_at: item.last_bought_at })
+      const { error } = await supabase
         .from('list_entries')
         .update({ status: 'needed', bought_at: null })
         .eq('id', entry.id)
+      if (error) {
+        console.error(error)
+        patchEntry(entry.id, { status: 'got', bought_at: now })
+        if (item) patchItem(item.id, { last_bought_at: now })
+        showError(`Couldn't undo. "${name}" is still marked as bought.`)
+        return
+      }
       if (item) await recomputeLastBought(item.id)
-      await loadAll()
     })
   }
 
-  async function handleDeleteEntry(entry, item) {
-    await supabase.from('list_entries').delete().eq('id', entry.id)
-    await loadAll()
-    showToast(`Removed "${item?.name}" from the list`, async () => {
-      await supabase.from('list_entries').insert({
-        household_id: HOUSEHOLD_ID,
-        item_id: entry.item_id,
-        quantity: entry.quantity,
-        note: entry.note,
-        added_by: entry.added_by,
-        status: 'needed',
-      })
-      await loadAll()
+  function handleDeleteEntry(entry, item) {
+    const name = item?.name || 'item'
+    removeEntryLocally(entry.id)
+
+    const deleted = (async () => {
+      const { error } = await supabase.from('list_entries').delete().eq('id', entry.id)
+      if (error) {
+        console.error(error)
+        restoreEntry(entry)
+        showError(`Couldn't remove "${name}". Check your connection and try again.`)
+        return false
+      }
+      return true
+    })()
+
+    showToast(`Removed "${name}" from the list`, async () => {
+      if (!(await deleted)) return
+      restoreEntry(entry)
+      // same id and created_at, so it comes back exactly where it was
+      const { error } = await supabase.from('list_entries').insert(entry)
+      if (error) {
+        console.error(error)
+        removeEntryLocally(entry.id)
+        showError(`Couldn't undo. "${name}" is still removed.`)
+      }
     })
   }
 
   async function handleMoveBack(entry) {
-    await supabase
+    patchEntry(entry.id, { status: 'needed', bought_at: null })
+    const { error } = await supabase
       .from('list_entries')
       .update({ status: 'needed', bought_at: null })
       .eq('id', entry.id)
+    if (error) {
+      console.error(error)
+      patchEntry(entry.id, { status: entry.status, bought_at: entry.bought_at })
+      showError("Couldn't move it back to the list. Check your connection and try again.")
+      return
+    }
     await recomputeLastBought(entry.item_id)
-    await loadAll()
   }
 
   async function handleDeleteForever(entry) {
@@ -167,12 +263,34 @@ export default function App() {
       `Permanently delete this purchase record${item ? ` for "${item.name}"` : ''}? This can't be undone.`,
     )
     if (!confirmed) return
-    await supabase.from('list_entries').delete().eq('id', entry.id)
+    removeEntryLocally(entry.id)
+    const { error } = await supabase.from('list_entries').delete().eq('id', entry.id)
+    if (error) {
+      console.error(error)
+      restoreEntry(entry)
+      showError("Couldn't delete it. Check your connection and try again.")
+      return
+    }
     await recomputeLastBought(entry.item_id)
-    await loadAll()
+  }
+
+  function retryLoad() {
+    setLoading(true)
+    loadAll()
   }
 
   if (loading) return <p className="loading">Loading…</p>
+
+  if (!hasLoaded) {
+    return (
+      <div className="load-error" role="alert">
+        <p>Couldn't load the list. Check your connection.</p>
+        <button type="button" onClick={retryLoad}>
+          Try again
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="app">
@@ -199,6 +317,15 @@ export default function App() {
           </button>
         </nav>
       </header>
+
+      {loadError && (
+        <p className="sync-banner" role="alert">
+          Couldn't refresh the list. You may be offline.{' '}
+          <button type="button" className="link-button" onClick={loadAll}>
+            Retry
+          </button>
+        </p>
+      )}
 
       {view === 'list' && (
         <>
@@ -258,7 +385,8 @@ export default function App() {
 
       <UndoToast
         message={toast?.message}
-        onUndo={() => toast?.undo?.()}
+        error={toast?.error}
+        onUndo={toast?.undo}
         onDismiss={dismissToast}
       />
     </div>

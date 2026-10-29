@@ -24,6 +24,7 @@ export default function AddItemForm({
   )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
 
   const existing = items.find(
     (i) => i.name.toLowerCase() === name.trim().toLowerCase(),
@@ -48,6 +49,7 @@ export default function AddItemForm({
       console.error(error)
       return false
     }
+    setError(null)
     setName('')
     setQuantity('')
     setNote('')
@@ -63,7 +65,9 @@ export default function AddItemForm({
       return
     }
     setSaving(true)
-    await addToList(existing.id)
+    if (!(await addToList(existing.id))) {
+      setError(`Couldn't add "${existing.name}". Check your connection and try again.`)
+    }
     setSaving(false)
   }
 
@@ -93,8 +97,12 @@ export default function AddItemForm({
           <Autocomplete
             options={items}
             value={name}
-            onChange={setName}
+            onChange={(value) => {
+              setName(value)
+              setError(null)
+            }}
             placeholder="Add an item…"
+            ariaLabel="Item name"
             renderMeta={(item) =>
               item.last_bought_at
                 ? `bought ${formatRelativeTime(item.last_bought_at)}`
@@ -105,6 +113,8 @@ export default function AddItemForm({
             Add
           </button>
         </div>
+
+        {error && <p className="form-error">{error}</p>}
 
         {existing && (
           <p className="last-bought">
@@ -118,18 +128,21 @@ export default function AddItemForm({
           <input
             className="quantity-input"
             placeholder="Qty (e.g. 2, 1 gal)"
+            aria-label="Quantity"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
           <input
             className="note-input"
             placeholder="Note (optional)"
+            aria-label="Note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
           {members.length > 0 && (
             <select
               className="member-select"
+              aria-label="Who's adding"
               value={addedBy}
               onChange={(e) => handleAddedByChange(e.target.value)}
             >

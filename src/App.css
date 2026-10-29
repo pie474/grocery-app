@@ -153,11 +153,12 @@ header h1 {
   flex: 0 0 auto;
 }
 
+/* 16px or more, or iOS Safari zooms the page when a field is focused */
 select {
   border: 1px solid #d8d5cc;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.9rem;
+  font-size: 16px;
   background: #fff;
   color: #1c1c1a;
 }
@@ -217,7 +218,7 @@ textarea {
   border: 1px solid #d8d5cc;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.95rem;
+  font-size: 16px;
   background: #fff;
 }
 
@@ -286,14 +287,97 @@ button:disabled {
 
 .list-row {
   border-bottom: 1px solid #ece9e0;
-  padding: 10px 0;
 }
 
 .list-row-main {
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+
+/* 44px square: the minimum comfortable tap target */
+.check-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  padding: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-circle {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #8fb9a0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.check-button:active .check-circle {
+  background: #2f6f4f;
+  border-color: #2f6f4f;
+}
+
+.list-row-toggle {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  padding: 8px 0;
+  background: none;
+  color: #1c1c1a;
+  text-align: left;
+}
+
+.list-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-row-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-right: 2px solid #9c9a92;
+  border-bottom: 2px solid #9c9a92;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.list-row-toggle[aria-expanded='true'] .chevron {
+  transform: rotate(-135deg);
+}
+
+/* lines up with the item name, past the check button */
+.list-row-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px 38px;
+}
+
+.list-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.list-row-actions button {
+  min-height: 44px;
 }
 
 .item-name {
@@ -310,29 +394,10 @@ button:disabled {
   font-size: 0.85rem;
 }
 
-.bought-button {
-  background: #eef4ee;
-  color: #2f6f4f;
-  border: 1px solid #b7d3c1;
-  padding: 6px 10px;
-  font-size: 0.82rem;
-  flex: none;
-}
-
-.edit-button {
-  background: none;
-  color: #6b6a63;
-  padding: 4px 8px;
-  font-size: 0.82rem;
-  text-decoration: underline;
-  flex: none;
-}
-
 .entry-edit-form {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
   padding: 10px;
   background: #f1efe8;
   border-radius: 8px;
@@ -348,19 +413,9 @@ button:disabled {
   font-size: 0.85rem;
 }
 
-.delete-button {
-  background: none;
-  color: #a33;
-  padding: 4px 8px;
-  font-size: 1rem;
-  line-height: 1;
-  flex: none;
-}
-
 .list-row-meta {
   display: flex;
   gap: 8px;
-  margin-left: 0;
   margin-top: 4px;
   font-size: 0.82rem;
   color: #6b6a63;
@@ -410,9 +465,40 @@ button:disabled {
 .undo-toast-button {
   background: none;
   color: #9fd9b4;
-  padding: 0;
+  min-height: 44px;
+  padding: 0 4px;
   font-weight: 600;
   flex: none;
+}
+
+.undo-toast-error {
+  background: #7a2626;
+}
+
+.undo-toast-error .undo-toast-button {
+  color: #fff;
+}
+
+/* Connection problems */
+
+.sync-banner {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fbefe3;
+  color: #7a4a14;
+  font-size: 0.88rem;
+}
+
+.sync-banner .link-button {
+  font-size: inherit;
+  color: inherit;
+}
+
+.load-error {
+  margin-top: 40px;
+  text-align: center;
+  color: #6b6a63;
 }
 
 /* Bought view */
@@ -445,8 +531,6 @@ button:disabled {
 }
 
 .item-detail {
-  margin-top: 8px;
-  margin-left: 28px;
   padding: 10px;
   background: #f1efe8;
   border-radius: 8px;
