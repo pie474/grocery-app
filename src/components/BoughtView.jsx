@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatRelativeTime } from '../utils/time'
+import { dayKey, formatDayLabel, formatTimeOfDay } from '../utils/time'
 
 // "⋯" button with a small menu of actions for one row. Closes on an
 // outside tap or Escape.
@@ -83,6 +83,17 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
     .filter((e) => e.status === 'got')
     .sort((a, b) => new Date(b.bought_at || b.created_at) - new Date(a.bought_at || a.created_at))
 
+  // already newest first, so each day's entries are next to each other
+  const days = []
+  for (const entry of bought) {
+    const boughtAt = entry.bought_at || entry.created_at
+    const key = dayKey(boughtAt)
+    if (days.at(-1)?.key !== key) {
+      days.push({ key, label: formatDayLabel(boughtAt), entries: [] })
+    }
+    days.at(-1).entries.push(entry)
+  }
+
   // ignore ids that left the tab meanwhile (e.g. someone else's change)
   const selected = bought.filter((e) => selectedIds.includes(e.id))
   const allSelected = bought.length > 0 && selected.length === bought.length
@@ -95,6 +106,15 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
   function toggleSelected(entryId) {
     setSelectedIds((prev) =>
       prev.includes(entryId) ? prev.filter((id) => id !== entryId) : [...prev, entryId],
+    )
+  }
+
+  // select a whole day (one shopping trip), or clear it if it's all selected
+  function toggleDay(dayEntries) {
+    const ids = dayEntries.map((e) => e.id)
+    const allIn = ids.every((id) => selectedIds.includes(id))
+    setSelectedIds((prev) =>
+      allIn ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])],
     )
   }
 
@@ -137,50 +157,73 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
         )}
       </div>
 
-      {bought.map((entry) => {
-        const item = itemsById[entry.item_id]
-        const addedByName = membersById[entry.added_by]?.name
-        const isSelected = selectedIds.includes(entry.id)
-
-        const details = (
-          <span className="bought-row-text">
-            <span className="list-row-title">
-              <span className="item-name">{item?.name}</span>
-              {entry.quantity && <span className="quantity">{entry.quantity}</span>}
-            </span>
-            <span className="list-row-meta">
-              {entry.note && <span className="entry-note">{entry.note}</span>}
-              {addedByName && <span className="entry-added-by">added by {addedByName}</span>}
-              <span className="entry-bought-at">
-                bought {formatRelativeTime(entry.bought_at || entry.created_at)}
-              </span>
-            </span>
-          </span>
-        )
-
+      {days.map((day) => {
+        const dayAllSelected = day.entries.every((e) => selectedIds.includes(e.id))
         return (
-          <div key={entry.id} className={isSelected ? 'bought-row selected' : 'bought-row'}>
-            {selecting ? (
-              // the whole row is the checkbox's label, so any tap toggles it
-              <label className="bought-row-select">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleSelected(entry.id)}
-                />
-                {details}
-              </label>
-            ) : (
-              <>
-                {details}
-                <RowMenu
-                  label={item?.name || 'item'}
-                  onMoveBack={() => onMoveBack([entry])}
-                  onDelete={() => onDeleteForever([entry])}
-                />
-              </>
-            )}
-          </div>
+          <section key={day.key} className="bought-day" aria-label={day.label}>
+            <div className="bought-day-header">
+              <h3>{day.label}</h3>
+              {selecting ? (
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => toggleDay(day.entries)}
+                >
+                  {dayAllSelected ? 'Deselect' : 'Select'}
+                </button>
+              ) : (
+                <span className="bought-day-count">
+                  {day.entries.length === 1 ? '1 item' : `${day.entries.length} items`}
+                </span>
+              )}
+            </div>
+            {day.entries.map((entry) => {
+              const item = itemsById[entry.item_id]
+              const addedByName = membersById[entry.added_by]?.name
+              const isSelected = selectedIds.includes(entry.id)
+
+              const details = (
+                <span className="bought-row-text">
+                  <span className="list-row-title">
+                    <span className="item-name">{item?.name}</span>
+                    {entry.quantity && <span className="quantity">{entry.quantity}</span>}
+                  </span>
+                  <span className="list-row-meta">
+                    {entry.note && <span className="entry-note">{entry.note}</span>}
+                    {addedByName && <span className="entry-added-by">added by {addedByName}</span>}
+                    <span className="entry-bought-at">
+                      {formatTimeOfDay(entry.bought_at || entry.created_at)}
+                    </span>
+                  </span>
+                </span>
+              )
+
+              return (
+                <div key={entry.id} className={isSelected ? 'bought-row selected' : 'bought-row'}>
+                  {selecting ? (
+                    // the whole row is the checkbox's label, so any tap toggles it
+                    <label className="bought-row-select">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelected(entry.id)}
+                      />
+                      {details}
+                    </label>
+                  ) : (
+                    <>
+                      {details}
+                      <RowMenu
+                        label={item?.name || 'item'}
+                        onMoveBack={() => onMoveBack([entry])}
+                        onDelete={() => onDeleteForever([entry])}
+                      />
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </section>
         )
       })}
 

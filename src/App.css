@@ -444,6 +444,7 @@ button:disabled {
 
 .undo-toast {
   position: fixed;
+  z-index: 30;
   left: 16px;
   right: 16px;
   bottom: 16px;
@@ -525,6 +526,42 @@ button:disabled {
   font-size: 0.88rem;
 }
 
+.bought-day {
+  margin-bottom: 8px;
+}
+
+/* stays in view while scrolling through that day's items */
+.bought-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin-top: 8px;
+  background: #fafaf8;
+  border-bottom: 1px solid #ece9e0;
+}
+
+.bought-day-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #40403a;
+}
+
+.bought-day-header .link-button {
+  min-height: 44px;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.bought-day-count {
+  color: #6b6a63;
+  font-size: 0.8rem;
+}
+
 .bought-row {
   display: flex;
   align-items: center;
@@ -570,6 +607,7 @@ button:disabled {
 
 .batch-bar {
   position: fixed;
+  z-index: 10;
   left: 0;
   right: 0;
   bottom: 0;
