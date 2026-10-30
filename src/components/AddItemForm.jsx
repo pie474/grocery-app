@@ -5,25 +5,22 @@ import NewItemDialog from './NewItemDialog'
 import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 
-const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
-
 export default function AddItemForm({
   items,
   categories,
   stores,
   itemStores = [],
-  members = [],
+  entries = [],
+  addedBy = null,
   onAdded,
   onStoreAdded,
 }) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
-  const [addedBy, setAddedBy] = useState(
-    () => localStorage.getItem(LAST_MEMBER_KEY) || '',
-  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
 
   const existing = items.find(
     (i) => i.name.toLowerCase() === name.trim().toLowerCase(),
@@ -35,6 +32,14 @@ export default function AddItemForm({
   const existingHasStores =
     !!existing && itemStores.some((link) => link.item_id === existing.id)
 
+  // entries still waiting on the list, to warn before adding a duplicate
+  const neededEntries = entries.filter((e) => e.status === 'needed')
+  const onList = !!existing && neededEntries.find((e) => e.item_id === existing.id)
+
+  // Quantity and note only matter once there's something to
+  // add, so they stay out of the way of the list until then.
+  const showExtras = !!(name.trim() || quantity || note)
+
   async function addToList(itemId) {
     const { error } = await supabase.from('list_entries').insert({
       household_id: HOUSEHOLD_ID,
@@ -42,12 +47,13 @@ export default function AddItemForm({
       status: 'needed',
       quantity: quantity.trim() || null,
       note: note.trim() || null,
-      added_by: addedBy || null,
+      added_by: addedBy,
     })
     if (error) {
       console.error(error)
       return false
     }
+    setError(null)
     setName('')
     setQuantity('')
     setNote('')
@@ -63,7 +69,9 @@ export default function AddItemForm({
       return
     }
     setSaving(true)
-    await addToList(existing.id)
+    if (!(await addToList(existing.id))) {
+      setError(`Couldn't add "${existing.name}". Check your connection and try again.`)
+    }
     setSaving(false)
   }
 
@@ -77,15 +85,6 @@ export default function AddItemForm({
     setDialogOpen(false)
   }
 
-  function handleAddedByChange(memberId) {
-    setAddedBy(memberId)
-    if (memberId) {
-      localStorage.setItem(LAST_MEMBER_KEY, memberId)
-    } else {
-      localStorage.removeItem(LAST_MEMBER_KEY)
-    }
-  }
-
   return (
     <>
       <form className="add-item-form" onSubmit={handleSubmit}>
@@ -93,20 +92,32 @@ export default function AddItemForm({
           <Autocomplete
             options={items}
             value={name}
-            onChange={setName}
+            onChange={(value) => {
+              setName(value)
+              setError(null)
+            }}
             placeholder="Add an item…"
-            renderMeta={(item) =>
-              item.last_bought_at
+            ariaLabel="Item name"
+            renderMeta={(item) => {
+              if (neededEntries.some((e) => e.item_id === item.id)) return 'on the list'
+              return item.last_bought_at
                 ? `bought ${formatRelativeTime(item.last_bought_at)}`
                 : 'never bought'
-            }
+            }}
           />
           <button type="submit" disabled={saving || !name.trim()}>
-            Add
+            {onList ? 'Add again' : 'Add'}
           </button>
         </div>
 
-        {existing && (
+        {error && <p className="form-error">{error}</p>}
+
+        {onList && (
+          <p className="already-on-list">
+            Already on the list{onList.quantity && ` (${onList.quantity})`}
+          </p>
+        )}
+        {existing && !onList && (
           <p className="last-bought">
             {existing.last_bought_at
               ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
@@ -114,34 +125,24 @@ export default function AddItemForm({
           </p>
         )}
 
-        <div className="add-item-extra-row">
-          <input
-            className="quantity-input"
-            placeholder="Qty (e.g. 2, 1 gal)"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-          <input
-            className="note-input"
-            placeholder="Note (optional)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          {members.length > 0 && (
-            <select
-              className="member-select"
-              value={addedBy}
-              onChange={(e) => handleAddedByChange(e.target.value)}
-            >
-              <option value="">Who's adding?</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {showExtras && (
+          <div className="add-item-extra-row">
+            <input
+              className="quantity-input"
+              placeholder="Qty (e.g. 2, 1 gal)"
+              aria-label="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+            <input
+              className="note-input"
+              placeholder="Note (optional)"
+              aria-label="Note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        )}
       </form>
 
       {/* outside the form above: forms can't nest */}

@@ -13,14 +13,16 @@ Supabase.
    before photos existed, run just the `item-photos` bucket/policy
    statements from `schema.sql`. If you set up before categories were
    their own table, run `migrations/001_categories.sql` instead of
-   re-running the schema.
+   re-running the schema. If you set up before purchases recorded who
+   bought them, also run `migrations/002_bought_by.sql`.
 3. **Create your household row** — in the Supabase table editor, add one
    row to `households` (any name), then copy its `id`.
 4. **Add your stores** — add a few rows to `stores` (e.g. "Trader Joe's",
    "Costco") using that household id.
 5. **Add household members** — add a row per person to `members` (name +
-   household id). This powers the "who's adding" dropdown on the list —
-   skip it and that dropdown just won't show up.
+   household id). This powers the "who are you" picker in the top right,
+   which records who added and who bought each item — skip it and the
+   picker just won't show up.
 6. **Copy env vars:**
    ```
    cp .env.example .env
@@ -47,8 +49,8 @@ Supabase.
 Included: shared realtime list, store filter ("what can I get here"),
 add-item flow that can define a brand-new catalog item with stores +
 preferred brand + image + selection criteria in one form, quantity/note/
-added-by fields per list entry (the last person selected is remembered
-per device via localStorage), a **Bought** action separate from **delete**
+added-by fields per list entry (who's using each phone is picked once in
+the header and remembered via localStorage), a **Bought** action separate from **delete**
 on each list row (each with its own undo toast for a few seconds after),
 a "last bought" timestamp per item shown in the item detail and Catalog
 view, a dedicated **Bought** tab to browse purchase history with "move
