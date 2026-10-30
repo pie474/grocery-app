@@ -360,6 +360,7 @@ export default function App() {
             categories={categories}
             stores={stores}
             itemStores={itemStores}
+            entries={entries}
             members={members}
             onAdded={loadAll}
             onStoreAdded={loadAll}
@@ -371,11 +372,13 @@ export default function App() {
             categories={categories}
             itemStores={itemStores}
             brands={brands}
+            stores={stores}
             members={members}
             activeStoreId={activeStoreId}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
             onChanged={loadAll}
+            onStoreAdded={loadAll}
           />
         </>
       )}

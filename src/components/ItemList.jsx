@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
 import EntryEditForm from './EntryEditForm'
+import ItemEditForm from './ItemEditForm'
 import { formatRelativeTime } from '../utils/time'
 
 export default function ItemList({
@@ -9,20 +10,29 @@ export default function ItemList({
   categories,
   itemStores,
   brands,
+  stores,
   members = [],
   activeStoreId,
   onMarkBought,
   onDelete,
   onChanged,
+  onStoreAdded,
 }) {
   const [expandedId, setExpandedId] = useState(null)
-  const [editingId, setEditingId] = useState(null)
+  // what the expanded panel is editing: 'entry' (qty, note, who) or
+  // 'item' (the catalog item's brands, stores and tips), or null
+  const [editing, setEditing] = useState(null)
 
   // Edit and Remove live in the expanded panel, so the row itself only
   // has the one action people use most in the store: checking it off.
   function toggleExpanded(entryId) {
     setExpandedId(expandedId === entryId ? null : entryId)
-    setEditingId(null)
+    setEditing(null)
+  }
+
+  function finishEditing() {
+    setEditing(null)
+    onChanged?.()
   }
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
@@ -37,13 +47,21 @@ export default function ItemList({
     )
   })
 
-  const grouped = visibleEntries.reduce((acc, entry) => {
-    const categoryId = itemsById[entry.item_id]?.category_id
-    const category = categoriesById[categoryId]?.name || 'uncategorized'
-    acc[category] = acc[category] || []
-    acc[category].push(entry)
-    return acc
-  }, {})
+  // Alphabetical, with uncategorized last, so groups don't jump around
+  // as entries are added.
+  const groups = Object.values(
+    visibleEntries.reduce((acc, entry) => {
+      const category = categoriesById[itemsById[entry.item_id]?.category_id]
+      const key = category?.id || 'uncategorized'
+      acc[key] = acc[key] || { key, name: category?.name || 'Uncategorized', entries: [] }
+      acc[key].entries.push(entry)
+      return acc
+    }, {}),
+  ).sort((a, b) => {
+    if (a.key === 'uncategorized') return 1
+    if (b.key === 'uncategorized') return -1
+    return a.name.localeCompare(b.name)
+  })
 
   if (!visibleEntries.length) {
     return <p className="empty-state">Nothing needed here right now.</p>
@@ -51,15 +69,14 @@ export default function ItemList({
 
   return (
     <div className="item-list">
-      {Object.entries(grouped).map(([category, categoryEntries]) => (
-        <div key={category} className="category-group">
-          <h3>{category}</h3>
-          {categoryEntries.map((entry) => {
+      {groups.map((group) => (
+        <div key={group.key} className="category-group">
+          <h3>{group.name}</h3>
+          {group.entries.map((entry) => {
             const item = itemsById[entry.item_id]
             const itemBrands = brands.filter((b) => b.item_id === entry.item_id)
             const isExpanded = expandedId === entry.id
             const addedByName = membersById[entry.added_by]?.name
-            const isEditing = editingId === entry.id
 
             return (
               <div key={entry.id} className="list-row">
@@ -100,25 +117,48 @@ export default function ItemList({
                 </div>
                 {isExpanded && (
                   <div className="list-row-panel">
-                    {isEditing ? (
+                    {editing === 'entry' && (
                       <EntryEditForm
                         entry={entry}
                         itemName={item?.name}
                         members={members}
-                        onSaved={() => {
-                          setEditingId(null)
-                          onChanged?.()
-                        }}
-                        onCancel={() => setEditingId(null)}
+                        onSaved={finishEditing}
+                        onCancel={() => setEditing(null)}
                       />
-                    ) : (
+                    )}
+                    {editing === 'item' && item && (
+                      <div className="catalog-edit-panel">
+                        <ItemEditForm
+                          item={item}
+                          categories={categories}
+                          stores={stores}
+                          storeIds={itemStores
+                            .filter((link) => link.item_id === item.id)
+                            .map((link) => link.store_id)}
+                          brands={itemBrands}
+                          onSaved={finishEditing}
+                          onCancel={() => setEditing(null)}
+                          onStoreAdded={onStoreAdded}
+                        />
+                      </div>
+                    )}
+                    {!editing && (
                       <>
                         {item && <ItemDetail item={item} brands={itemBrands} />}
+                        {item && (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => setEditing('item')}
+                          >
+                            Edit brands, stores &amp; tips
+                          </button>
+                        )}
                         <div className="list-row-actions">
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={() => setEditingId(entry.id)}
+                            onClick={() => setEditing('entry')}
                           >
                             Edit
                           </button>

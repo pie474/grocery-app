@@ -12,6 +12,7 @@ export default function AddItemForm({
   categories,
   stores,
   itemStores = [],
+  entries = [],
   members = [],
   onAdded,
   onStoreAdded,
@@ -35,6 +36,14 @@ export default function AddItemForm({
   // the dialog; everything else is added straight to the list.
   const existingHasStores =
     !!existing && itemStores.some((link) => link.item_id === existing.id)
+
+  // entries still waiting on the list, to warn before adding a duplicate
+  const neededEntries = entries.filter((e) => e.status === 'needed')
+  const onList = !!existing && neededEntries.find((e) => e.item_id === existing.id)
+
+  // Quantity, note and who's adding only matter once there's something to
+  // add, so they stay out of the way of the list until then.
+  const showExtras = !!(name.trim() || quantity || note)
 
   async function addToList(itemId) {
     const { error } = await supabase.from('list_entries').insert({
@@ -103,20 +112,26 @@ export default function AddItemForm({
             }}
             placeholder="Add an item…"
             ariaLabel="Item name"
-            renderMeta={(item) =>
-              item.last_bought_at
+            renderMeta={(item) => {
+              if (neededEntries.some((e) => e.item_id === item.id)) return 'on the list'
+              return item.last_bought_at
                 ? `bought ${formatRelativeTime(item.last_bought_at)}`
                 : 'never bought'
-            }
+            }}
           />
           <button type="submit" disabled={saving || !name.trim()}>
-            Add
+            {onList ? 'Add again' : 'Add'}
           </button>
         </div>
 
         {error && <p className="form-error">{error}</p>}
 
-        {existing && (
+        {onList && (
+          <p className="already-on-list">
+            Already on the list{onList.quantity && ` (${onList.quantity})`}
+          </p>
+        )}
+        {existing && !onList && (
           <p className="last-bought">
             {existing.last_bought_at
               ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
@@ -124,37 +139,39 @@ export default function AddItemForm({
           </p>
         )}
 
-        <div className="add-item-extra-row">
-          <input
-            className="quantity-input"
-            placeholder="Qty (e.g. 2, 1 gal)"
-            aria-label="Quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-          <input
-            className="note-input"
-            placeholder="Note (optional)"
-            aria-label="Note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          {members.length > 0 && (
-            <select
-              className="member-select"
-              aria-label="Who's adding"
-              value={addedBy}
-              onChange={(e) => handleAddedByChange(e.target.value)}
-            >
-              <option value="">Who's adding?</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {showExtras && (
+          <div className="add-item-extra-row">
+            <input
+              className="quantity-input"
+              placeholder="Qty (e.g. 2, 1 gal)"
+              aria-label="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+            <input
+              className="note-input"
+              placeholder="Note (optional)"
+              aria-label="Note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+            {members.length > 0 && (
+              <select
+                className="member-select"
+                aria-label="Who's adding"
+                value={addedBy}
+                onChange={(e) => handleAddedByChange(e.target.value)}
+              >
+                <option value="">Who's adding?</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </form>
 
       {/* outside the form above: forms can't nest */}

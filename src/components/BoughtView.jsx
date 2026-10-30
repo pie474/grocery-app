@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { dayKey, formatDayLabel, formatTimeOfDay } from '../utils/time'
 
-// "⋯" button with a small menu of actions for one row. Closes on an
+// "⋮" button with a small menu of actions for one row. Closes on an
 // outside tap or Escape.
 function RowMenu({ label, onMoveBack, onDelete }) {
   const [open, setOpen] = useState(false)
@@ -51,7 +51,7 @@ function RowMenu({ label, onMoveBack, onDelete }) {
         aria-expanded={open}
         onClick={toggle}
       >
-        <span aria-hidden="true">⋯</span>
+        <span aria-hidden="true">⋮</span>
       </button>
       {open && (
         <div className={openUp ? 'row-menu-list up' : 'row-menu-list'} role="menu">
