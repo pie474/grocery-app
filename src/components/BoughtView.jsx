@@ -192,7 +192,7 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
                       {entry.note && <span className="entry-note">{entry.note}</span>}
                       <span className="entry-bought-at">
                         Bought at {formatTimeOfDay(entry.bought_at || entry.created_at)}
-                        {boughtByName && ` (by ${boughtByName})`}
+                        {boughtByName && ` by ${boughtByName}`}
                       </span>
                     </span>
                   </span>
