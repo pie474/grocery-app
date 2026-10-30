@@ -13,7 +13,8 @@ Supabase.
    before photos existed, run just the `item-photos` bucket/policy
    statements from `schema.sql`. If you set up before categories were
    their own table, run `migrations/001_categories.sql` instead of
-   re-running the schema.
+   re-running the schema. If you set up before purchases recorded who
+   bought them, also run `migrations/002_bought_by.sql`.
 3. **Create your household row** — in the Supabase table editor, add one
    row to `households` (any name), then copy its `id`.
 4. **Add your stores** — add a few rows to `stores` (e.g. "Trader Joe's",

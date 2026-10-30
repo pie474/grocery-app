@@ -179,23 +179,27 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
             </div>
             {day.entries.map((entry) => {
               const item = itemsById[entry.item_id]
-              const addedByName = membersById[entry.added_by]?.name
+              const boughtByName = membersById[entry.bought_by]?.name
               const isSelected = selectedIds.includes(entry.id)
 
+              // the quantity sits beside the text, not in it, so the row
+              // centers it vertically like the ⋮ button
               const details = (
-                <span className="bought-row-text">
-                  <span className="list-row-title">
+                <>
+                  <span className="bought-row-text">
                     <span className="item-name">{item?.name}</span>
-                    {entry.quantity && <span className="quantity">{entry.quantity}</span>}
-                  </span>
-                  <span className="list-row-meta">
-                    {entry.note && <span className="entry-note">{entry.note}</span>}
-                    {addedByName && <span className="entry-added-by">added by {addedByName}</span>}
-                    <span className="entry-bought-at">
-                      {formatTimeOfDay(entry.bought_at || entry.created_at)}
+                    <span className="list-row-meta">
+                      {entry.note && <span className="entry-note">{entry.note}</span>}
+                      <span className="entry-bought-at">
+                        {formatTimeOfDay(entry.bought_at || entry.created_at)}
+                      </span>
+                      {boughtByName && (
+                        <span className="entry-added-by">bought by {boughtByName}</span>
+                      )}
                     </span>
                   </span>
-                </span>
+                  {entry.quantity && <span className="quantity">{entry.quantity}</span>}
+                </>
               )
 
               return (

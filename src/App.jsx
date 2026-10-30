@@ -6,6 +6,10 @@ import AddItemForm from './components/AddItemForm'
 import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
+import { getDeviceMemberId } from './utils/members'
+
+// list_entries fields for an entry that's back on the list
+const NEEDED = { status: 'needed', bought_at: null, bought_by: null }
 
 export default function App() {
   const [stores, setStores] = useState([])
@@ -168,7 +172,8 @@ export default function App() {
   function handleMarkBought(entry, item) {
     const now = new Date().toISOString()
     const name = item?.name || 'item'
-    patchEntry(entry.id, { status: 'got', bought_at: now })
+    const bought = { status: 'got', bought_at: now, bought_by: getDeviceMemberId() || null }
+    patchEntry(entry.id, bought)
     if (item) patchItem(item.id, { last_bought_at: now })
 
     // Resolves to whether the save worked, so Undo can wait for it
@@ -176,11 +181,15 @@ export default function App() {
     const saved = (async () => {
       const { error } = await supabase
         .from('list_entries')
-        .update({ status: 'got', bought_at: now })
+        .update(bought)
         .eq('id', entry.id)
       if (error) {
         console.error(error)
-        patchEntry(entry.id, { status: entry.status, bought_at: entry.bought_at })
+        patchEntry(entry.id, {
+          status: entry.status,
+          bought_at: entry.bought_at,
+          bought_by: entry.bought_by,
+        })
         if (item) patchItem(item.id, { last_bought_at: item.last_bought_at })
         showError(`Couldn't mark "${name}" as bought. Check your connection and try again.`)
         return false
@@ -197,15 +206,12 @@ export default function App() {
 
     showToast(`Marked "${name}" as bought`, async () => {
       if (!(await saved)) return
-      patchEntry(entry.id, { status: 'needed', bought_at: null })
+      patchEntry(entry.id, NEEDED)
       if (item) patchItem(item.id, { last_bought_at: item.last_bought_at })
-      const { error } = await supabase
-        .from('list_entries')
-        .update({ status: 'needed', bought_at: null })
-        .eq('id', entry.id)
+      const { error } = await supabase.from('list_entries').update(NEEDED).eq('id', entry.id)
       if (error) {
         console.error(error)
-        patchEntry(entry.id, { status: 'got', bought_at: now })
+        patchEntry(entry.id, bought)
         if (item) patchItem(item.id, { last_bought_at: now })
         showError(`Couldn't undo. "${name}" is still marked as bought.`)
         return
@@ -252,10 +258,10 @@ export default function App() {
   function handleMoveBack(selected) {
     const ids = selected.map((e) => e.id)
     setEntries((prev) =>
-      prev.map((e) => (ids.includes(e.id) ? { ...e, status: 'needed', bought_at: null } : e)),
+      prev.map((e) => (ids.includes(e.id) ? { ...e, ...NEEDED } : e)),
     )
     saveInBackground(
-      () => supabase.from('list_entries').update({ status: 'needed', bought_at: null }).in('id', ids),
+      () => supabase.from('list_entries').update(NEEDED).in('id', ids),
       selected,
       selected.length === 1
         ? "Couldn't move it back to the list. Check your connection and try again."

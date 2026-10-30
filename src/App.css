@@ -584,6 +584,10 @@ button:disabled {
   border-bottom: 1px solid #ece9e0;
 }
 
+.bought-row .quantity {
+  flex: none;
+}
+
 .bought-row.selected {
   background: #eef4ee;
 }
@@ -598,6 +602,8 @@ button:disabled {
 
 .bought-row-select {
   flex: 1;
+  min-width: 0;
+  min-height: 60px;
   display: flex;
   align-items: center;
   gap: 4px;

@@ -4,8 +4,7 @@ import Autocomplete from './Autocomplete'
 import NewItemDialog from './NewItemDialog'
 import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
-
-const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
+import { getDeviceMemberId, setDeviceMemberId } from '../utils/members'
 
 export default function AddItemForm({
   items,
@@ -20,9 +19,7 @@ export default function AddItemForm({
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
-  const [addedBy, setAddedBy] = useState(
-    () => localStorage.getItem(LAST_MEMBER_KEY) || '',
-  )
+  const [addedBy, setAddedBy] = useState(getDeviceMemberId)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -92,11 +89,7 @@ export default function AddItemForm({
 
   function handleAddedByChange(memberId) {
     setAddedBy(memberId)
-    if (memberId) {
-      localStorage.setItem(LAST_MEMBER_KEY, memberId)
-    } else {
-      localStorage.removeItem(LAST_MEMBER_KEY)
-    }
+    setDeviceMemberId(memberId)
   }
 
   return (
