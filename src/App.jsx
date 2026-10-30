@@ -6,7 +6,8 @@ import AddItemForm from './components/AddItemForm'
 import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
-import { getDeviceMemberId } from './utils/members'
+import MemberPicker from './components/MemberPicker'
+import { getDeviceMemberId, setDeviceMemberId } from './utils/members'
 
 // list_entries fields for an entry that's back on the list
 const NEEDED = { status: 'needed', bought_at: null, bought_by: null }
@@ -25,6 +26,8 @@ export default function App() {
   const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
   const [toast, setToast] = useState(null) // { message, undo }
+  // who's using this phone: recorded as who added or bought things here
+  const [deviceMemberId, setDeviceMemberIdState] = useState(getDeviceMemberId)
   const toastTimeoutRef = useRef(null)
 
   const loadAll = useCallback(async () => {
@@ -112,6 +115,14 @@ export default function App() {
     }
   }, [loadAll])
 
+  function handleDeviceMemberChange(memberId) {
+    setDeviceMemberIdState(memberId)
+    setDeviceMemberId(memberId)
+  }
+
+  // ignores a remembered member who has since been removed
+  const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
+
   // undo: a function for an Undo button, or null for a plain message.
   function showToast(message, undo, { error = false } = {}) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
@@ -172,7 +183,7 @@ export default function App() {
   function handleMarkBought(entry, item) {
     const now = new Date().toISOString()
     const name = item?.name || 'item'
-    const bought = { status: 'got', bought_at: now, bought_by: getDeviceMemberId() || null }
+    const bought = { status: 'got', bought_at: now, bought_by: currentMemberId }
     patchEntry(entry.id, bought)
     if (item) patchItem(item.id, { last_bought_at: now })
 
@@ -320,7 +331,16 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Grocery List</h1>
+        <div className="app-header-top">
+          <h1>Grocery List</h1>
+          {members.length > 0 && (
+            <MemberPicker
+              members={members}
+              memberId={currentMemberId}
+              onChange={handleDeviceMemberChange}
+            />
+          )}
+        </div>
         <nav className="view-tabs">
           <button
             className={view === 'list' ? 'tab active' : 'tab'}
@@ -367,7 +387,7 @@ export default function App() {
             stores={stores}
             itemStores={itemStores}
             entries={entries}
-            members={members}
+            addedBy={currentMemberId}
             onAdded={loadAll}
             onStoreAdded={loadAll}
           />

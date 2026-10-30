@@ -4,7 +4,6 @@ import Autocomplete from './Autocomplete'
 import NewItemDialog from './NewItemDialog'
 import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
-import { getDeviceMemberId, setDeviceMemberId } from '../utils/members'
 
 export default function AddItemForm({
   items,
@@ -12,14 +11,13 @@ export default function AddItemForm({
   stores,
   itemStores = [],
   entries = [],
-  members = [],
+  addedBy = null,
   onAdded,
   onStoreAdded,
 }) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
-  const [addedBy, setAddedBy] = useState(getDeviceMemberId)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -38,7 +36,7 @@ export default function AddItemForm({
   const neededEntries = entries.filter((e) => e.status === 'needed')
   const onList = !!existing && neededEntries.find((e) => e.item_id === existing.id)
 
-  // Quantity, note and who's adding only matter once there's something to
+  // Quantity and note only matter once there's something to
   // add, so they stay out of the way of the list until then.
   const showExtras = !!(name.trim() || quantity || note)
 
@@ -49,7 +47,7 @@ export default function AddItemForm({
       status: 'needed',
       quantity: quantity.trim() || null,
       note: note.trim() || null,
-      added_by: addedBy || null,
+      added_by: addedBy,
     })
     if (error) {
       console.error(error)
@@ -85,11 +83,6 @@ export default function AddItemForm({
     if (result.error) return result.error
     if (!(await addToList(result.itemId))) return "Couldn't add it to the list. Try again."
     setDialogOpen(false)
-  }
-
-  function handleAddedByChange(memberId) {
-    setAddedBy(memberId)
-    setDeviceMemberId(memberId)
   }
 
   return (
@@ -148,21 +141,6 @@ export default function AddItemForm({
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
-            {members.length > 0 && (
-              <select
-                className="member-select"
-                aria-label="Who's adding"
-                value={addedBy}
-                onChange={(e) => handleAddedByChange(e.target.value)}
-              >
-                <option value="">Who's adding?</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
         )}
       </form>

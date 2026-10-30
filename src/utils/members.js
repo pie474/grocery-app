@@ -1,5 +1,5 @@
-// The household member last picked on this device ("Who's adding?"),
-// also used as the person who marks things bought here.
+// The household member picked on this device (the chip in the header),
+// recorded as whoever adds or buys things from this phone.
 const LAST_MEMBER_KEY = 'grocery-app:last-member-id'
 
 // storage can throw in private browsing or with site data blocked
