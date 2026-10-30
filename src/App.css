@@ -633,12 +633,6 @@ button:disabled {
   color: #40403a;
 }
 
-.bought-day-header .link-button {
-  min-height: 44px;
-  font-size: 0.88rem;
-  text-decoration: none;
-}
-
 .bought-day-count {
   color: #6b6a63;
   font-size: 0.8rem;
@@ -678,8 +672,19 @@ button:disabled {
   cursor: pointer;
 }
 
+/* the day header's checkbox lines up with the rows' */
+.bought-day-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
 /* padded out to a 44px tap target */
-.bought-row-select input {
+.bought-row-select input,
+.bought-day-select input {
   flex: none;
   width: 22px;
   height: 22px;

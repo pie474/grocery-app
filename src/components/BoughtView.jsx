@@ -1,6 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { dayKey, formatDayLabel, formatTimeOfDay } from '../utils/time'
 
+// Checkbox for a whole day: checked when all of its items are selected,
+// a dash (indeterminate) when only some are. Indeterminate can only be
+// set from script, hence the ref.
+function DayCheckbox({ entries, selectedIds, onToggle, label }) {
+  const ref = useRef(null)
+  const count = entries.filter((e) => selectedIds.includes(e.id)).length
+  const checked = count === entries.length
+  const partial = count > 0 && !checked
+
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = partial
+  }, [partial])
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      aria-label={`Select everything bought ${label}`}
+      checked={checked}
+      onChange={onToggle}
+    />
+  )
+}
+
 // "⋮" button with a small menu of actions for one row. Closes on an
 // outside tap or Escape.
 function RowMenu({ label, onMoveBack, onDelete }) {
@@ -158,24 +182,25 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
       </div>
 
       {days.map((day) => {
-        const dayAllSelected = day.entries.every((e) => selectedIds.includes(e.id))
+        const dayCount = day.entries.length === 1 ? '1 item' : `${day.entries.length} items`
         return (
           <section key={day.key} className="bought-day" aria-label={day.label}>
             <div className="bought-day-header">
-              <h3>{day.label}</h3>
               {selecting ? (
-                <button
-                  type="button"
-                  className="link-button"
-                  onClick={() => toggleDay(day.entries)}
-                >
-                  {dayAllSelected ? 'Deselect' : 'Select'}
-                </button>
+                // same checkbox as the rows; ticking it selects the whole day
+                <label className="bought-day-select">
+                  <DayCheckbox
+                    entries={day.entries}
+                    selectedIds={selectedIds}
+                    onToggle={() => toggleDay(day.entries)}
+                    label={day.label}
+                  />
+                  <h3>{day.label}</h3>
+                </label>
               ) : (
-                <span className="bought-day-count">
-                  {day.entries.length === 1 ? '1 item' : `${day.entries.length} items`}
-                </span>
+                <h3>{day.label}</h3>
               )}
+              <span className="bought-day-count">{dayCount}</span>
             </div>
             {day.entries.map((entry) => {
               const item = itemsById[entry.item_id]
