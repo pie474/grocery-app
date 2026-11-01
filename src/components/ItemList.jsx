@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
-import EntryEditForm from './EntryEditForm'
-import ItemEditForm from './ItemEditForm'
+import EntryFields from './EntryFields'
+import ItemEditDialog from './ItemEditDialog'
+import OverflowMenu from './OverflowMenu'
+import PhotoViewer from './PhotoViewer'
 import { formatRelativeTime } from '../utils/time'
 
 export default function ItemList({
@@ -15,29 +17,30 @@ export default function ItemList({
   activeStoreId,
   onMarkBought,
   onDelete,
+  onUpdateEntry,
   onChanged,
   onStoreAdded,
 }) {
   const [expandedId, setExpandedId] = useState(null)
-  // what the expanded panel is editing: 'entry' (qty, note, who) or
-  // 'item' (the catalog item's brands, stores and tips), or null
-  const [editing, setEditing] = useState(null)
+  // the panel that's animating shut, kept mounted until it finishes
+  const [closingId, setClosingId] = useState(null)
+  // the open panel once its animation is done; only then can things like
+  // the ⋮ menu spill outside it
+  const [settledId, setSettledId] = useState(null)
+  const [editingItemId, setEditingItemId] = useState(null)
+  const [photo, setPhoto] = useState(null) // { src, alt }
 
-  // Edit and Remove live in the expanded panel, so the row itself only
-  // has the one action people use most in the store: checking it off.
+  // The row itself only has the one action people use most in the store,
+  // checking it off; everything else lives in the expanded panel.
   function toggleExpanded(entryId) {
+    if (expandedId) setClosingId(expandedId)
     setExpandedId(expandedId === entryId ? null : entryId)
-    setEditing(null)
-  }
-
-  function finishEditing() {
-    setEditing(null)
-    onChanged?.()
   }
 
   const itemsById = Object.fromEntries(items.map((i) => [i.id, i]))
   const membersById = Object.fromEntries(members.map((m) => [m.id, m]))
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
+  const storesById = Object.fromEntries(stores.map((s) => [s.id, s]))
 
   const visibleEntries = entries.filter((entry) => {
     if (entry.status === 'got') return false
@@ -63,6 +66,8 @@ export default function ItemList({
     return a.name.localeCompare(b.name)
   })
 
+  const editingItem = editingItemId && itemsById[editingItemId]
+
   if (!visibleEntries.length) {
     return <p className="empty-state">Nothing needed here right now.</p>
   }
@@ -76,10 +81,20 @@ export default function ItemList({
             const item = itemsById[entry.item_id]
             const itemBrands = brands.filter((b) => b.item_id === entry.item_id)
             const isExpanded = expandedId === entry.id
+            const isClosing = !isExpanded && closingId === entry.id
             const addedByName = membersById[entry.added_by]?.name
+            const storeNames = itemStores
+              .filter((link) => link.item_id === entry.item_id)
+              .map((link) => storesById[link.store_id]?.name)
+              .filter(Boolean)
+              .sort((a, b) => a.localeCompare(b))
+            const facts = [
+              storeNames.join(', '),
+              item?.last_bought_at && `last bought ${formatRelativeTime(item.last_bought_at)}`,
+            ].filter(Boolean)
 
             return (
-              <div key={entry.id} className="list-row">
+              <div key={entry.id} className={isExpanded ? 'list-row expanded' : 'list-row'}>
                 <div className="list-row-main">
                   <button
                     type="button"
@@ -100,9 +115,12 @@ export default function ItemList({
                         <span className="item-name">{item?.name}</span>
                         {entry.quantity && <span className="quantity">{entry.quantity}</span>}
                       </span>
-                      {(entry.note || addedByName) && (
+                      {/* the note is editable in the open panel, so not repeated here */}
+                      {((entry.note && !isExpanded) || addedByName) && (
                         <span className="list-row-meta">
-                          {entry.note && <span className="entry-note">{entry.note}</span>}
+                          {entry.note && !isExpanded && (
+                            <span className="entry-note">{entry.note}</span>
+                          )}
                           {addedByName && (
                             <span className="entry-added-by">
                               added by {addedByName}
@@ -115,63 +133,53 @@ export default function ItemList({
                     <span className="chevron" aria-hidden="true" />
                   </button>
                 </div>
-                {isExpanded && (
-                  <div className="list-row-panel">
-                    {editing === 'entry' && (
-                      <EntryEditForm
-                        entry={entry}
-                        itemName={item?.name}
-                        members={members}
-                        onSaved={finishEditing}
-                        onCancel={() => setEditing(null)}
-                      />
-                    )}
-                    {editing === 'item' && item && (
-                      <div className="catalog-edit-panel">
-                        <ItemEditForm
+                {(isExpanded || isClosing) && (
+                  <div
+                    className={
+                      isClosing
+                        ? 'list-row-panel-wrap closing'
+                        : settledId === entry.id
+                          ? 'list-row-panel-wrap settled'
+                          : 'list-row-panel-wrap'
+                    }
+                    inert={isClosing ? '' : undefined}
+                    onAnimationEnd={(e) => {
+                      // ignore animations bubbling up from inside the panel
+                      if (e.target !== e.currentTarget) return
+                      if (isClosing) setClosingId(null)
+                      else setSettledId(entry.id)
+                    }}
+                  >
+                    <div className="list-row-panel">
+                      {item && (
+                        <ItemDetail
                           item={item}
-                          categories={categories}
-                          stores={stores}
-                          storeIds={itemStores
-                            .filter((link) => link.item_id === item.id)
-                            .map((link) => link.store_id)}
                           brands={itemBrands}
-                          onSaved={finishEditing}
-                          onCancel={() => setEditing(null)}
-                          onStoreAdded={onStoreAdded}
+                          onPhotoClick={setPhoto}
+                          onAddDetails={() => setEditingItemId(item.id)}
+                        />
+                      )}
+                      <EntryFields
+                        entry={entry}
+                        onSave={(changes) => onUpdateEntry(entry, changes)}
+                      />
+                      <div className="list-row-footer">
+                        <span className="list-row-facts">{facts.join(' · ')}</span>
+                        <OverflowMenu
+                          label={`More actions for ${item?.name || 'item'}`}
+                          actions={[
+                            ...(item
+                              ? [{ label: 'Edit item', onSelect: () => setEditingItemId(item.id) }]
+                              : []),
+                            {
+                              label: 'Remove from list',
+                              danger: true,
+                              onSelect: () => onDelete(entry, item),
+                            },
+                          ]}
                         />
                       </div>
-                    )}
-                    {!editing && (
-                      <>
-                        {item && <ItemDetail item={item} brands={itemBrands} />}
-                        {item && (
-                          <button
-                            type="button"
-                            className="link-button"
-                            onClick={() => setEditing('item')}
-                          >
-                            Edit brands, stores &amp; tips
-                          </button>
-                        )}
-                        <div className="list-row-actions">
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => setEditing('entry')}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="danger-button"
-                            onClick={() => onDelete(entry, item)}
-                          >
-                            Remove from list
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -179,6 +187,26 @@ export default function ItemList({
           })}
         </div>
       ))}
+
+      {editingItem && (
+        <ItemEditDialog
+          item={editingItem}
+          categories={categories}
+          stores={stores}
+          storeIds={itemStores
+            .filter((link) => link.item_id === editingItem.id)
+            .map((link) => link.store_id)}
+          brands={brands.filter((b) => b.item_id === editingItem.id)}
+          onSaved={() => {
+            setEditingItemId(null)
+            onChanged?.()
+          }}
+          onClose={() => setEditingItemId(null)}
+          onStoreAdded={onStoreAdded}
+        />
+      )}
+
+      {photo && <PhotoViewer src={photo.src} alt={photo.alt} onClose={() => setPhoto(null)} />}
     </div>
   )
 }

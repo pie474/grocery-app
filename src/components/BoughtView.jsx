@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import OverflowMenu from './OverflowMenu'
 import { dayKey, formatDayLabel, formatTimeOfDay } from '../utils/time'
 
 // Checkbox for a whole day: checked when all of its items are selected,
@@ -22,77 +23,6 @@ function DayCheckbox({ entries, selectedIds, onToggle, label }) {
       checked={checked}
       onChange={onToggle}
     />
-  )
-}
-
-// "⋮" button with a small menu of actions for one row. Closes on an
-// outside tap or Escape.
-function RowMenu({ label, onMoveBack, onDelete }) {
-  const [open, setOpen] = useState(false)
-  const [openUp, setOpenUp] = useState(false)
-  const wrapperRef = useRef(null)
-  const buttonRef = useRef(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handlePointerDown(e) {
-      if (!wrapperRef.current?.contains(e.target)) setOpen(false)
-    }
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') {
-        setOpen(false)
-        buttonRef.current?.focus()
-      }
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open])
-
-  function toggle() {
-    // near the bottom of the screen, open upward so the menu stays visible
-    const rect = buttonRef.current.getBoundingClientRect()
-    setOpenUp(window.innerHeight - rect.bottom < 140)
-    setOpen(!open)
-  }
-
-  function choose(action) {
-    setOpen(false)
-    action()
-  }
-
-  return (
-    <div className="row-menu" ref={wrapperRef}>
-      <button
-        ref={buttonRef}
-        type="button"
-        className="row-menu-button"
-        aria-label={`Actions for ${label}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={toggle}
-      >
-        <span aria-hidden="true">⋮</span>
-      </button>
-      {open && (
-        <div className={openUp ? 'row-menu-list up' : 'row-menu-list'} role="menu">
-          <button type="button" role="menuitem" onClick={() => choose(onMoveBack)}>
-            Move back to list
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="row-menu-danger"
-            onClick={() => choose(onDelete)}
-          >
-            Delete
-          </button>
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -240,10 +170,16 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
                   ) : (
                     <>
                       {details}
-                      <RowMenu
-                        label={item?.name || 'item'}
-                        onMoveBack={() => onMoveBack([entry])}
-                        onDelete={() => onDeleteForever([entry])}
+                      <OverflowMenu
+                        label={`Actions for ${item?.name || 'item'}`}
+                        actions={[
+                          { label: 'Move back to list', onSelect: () => onMoveBack([entry]) },
+                          {
+                            label: 'Delete',
+                            danger: true,
+                            onSelect: () => onDeleteForever([entry]),
+                          },
+                        ]}
                       />
                     </>
                   )}

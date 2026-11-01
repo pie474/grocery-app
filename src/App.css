@@ -225,10 +225,6 @@ header h1 {
   min-width: 120px;
 }
 
-.member-select {
-  flex: 0 0 auto;
-}
-
 /* 16px or more, or iOS Safari zooms the page when a field is focused */
 select {
   border: 1px solid #d8d5cc;
@@ -365,6 +361,15 @@ button:disabled {
   border-bottom: 1px solid #ece9e0;
 }
 
+/* an open row becomes one tinted card, header and panel together */
+.list-row.expanded {
+  margin: 4px -10px;
+  padding: 0 10px;
+  border-bottom-color: transparent;
+  border-radius: 12px;
+  background: #f1efe8;
+}
+
 .list-row-main {
   display: flex;
   align-items: center;
@@ -439,21 +444,112 @@ button:disabled {
   transform: rotate(-135deg);
 }
 
+/* Opens and closes by animating the grid row from 0 to its full height,
+   which (unlike height) works without knowing the content's size. */
+.list-row-panel-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: panel-open 0.18s ease-out;
+}
+
+.list-row-panel-wrap.closing {
+  grid-template-rows: 0fr;
+  animation: panel-close 0.15s ease-in;
+}
+
+@keyframes panel-open {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+@keyframes panel-close {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+/* a near-instant animation rather than none, so animationend still fires
+   and the closed panel is removed */
+@media (prefers-reduced-motion: reduce) {
+  .list-row-panel-wrap,
+  .list-row-panel-wrap.closing {
+    animation-duration: 1ms;
+  }
+}
+
 /* lines up with the item name, past the check button */
 .list-row-panel {
+  /* min-width too: once overflow is visible the grid would otherwise let
+     the inputs' natural width stretch the panel past the screen */
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 0 12px 38px;
+  gap: 10px;
+  padding: 0 0 4px 38px;
 }
 
-.list-row-actions {
+.list-row-panel-wrap.settled .list-row-panel {
+  overflow: visible;
+}
+
+.entry-fields {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.list-row-actions button {
+.entry-fields .quantity-input {
+  flex: 0 0 76px;
+  min-width: 0;
+}
+
+.entry-fields .note-input {
+  min-width: 0;
+}
+
+.entry-fields input {
+  padding: 8px 10px;
+}
+
+.entry-fields input {
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.entry-fields input.saved {
+  border-color: #2f6f4f;
+  box-shadow: 0 0 0 1px #2f6f4f;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.list-row-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-height: 44px;
+}
+
+.list-row-facts {
+  flex: 1;
+  min-width: 0;
+  color: #6b6a63;
+  font-size: 0.82rem;
 }
 
 .item-name {
@@ -468,19 +564,6 @@ button:disabled {
 .quantity {
   color: #6b6a63;
   font-size: 0.85rem;
-}
-
-.entry-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  background: #f1efe8;
-  border-radius: 8px;
-}
-
-.entry-edit-form .field-label {
-  margin: 0;
 }
 
 .form-error {
@@ -777,42 +860,106 @@ button:disabled {
 }
 
 .item-detail {
-  padding: 10px;
-  background: #f1efe8;
-  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   font-size: 0.88rem;
 }
 
-.brand-image {
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 6px;
+.item-photo {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e4e1d6;
+}
+
+.item-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  margin-bottom: 6px;
+}
+
+.item-detail-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-detail-text p {
+  margin: 0;
+}
+
+.item-detail-text p + p {
+  margin-top: 4px;
 }
 
 .brand-name {
-  margin: 0 0 4px;
   font-weight: 600;
 }
 
+.other-brands {
+  color: #6b6a63;
+}
+
 .selection-criteria {
-  margin: 4px 0 0;
   color: #40403a;
 }
 
-.other-brands {
-  margin-top: 6px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+/* nothing recorded yet: a prompt to add it */
+.item-detail-empty {
+  min-height: 44px;
+  background: none;
+  border: 1px dashed #b9b5a8;
+  color: #6b6a63;
+  font-size: 0.88rem;
 }
 
-.brand-chip {
-  background: #e4e1d6;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.75rem;
+/* Full-screen photo */
+
+.photo-viewer {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 16px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-viewer:not([open]) {
+  display: none;
+}
+
+.photo-viewer::backdrop {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.photo-viewer img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.photo-viewer-close {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.1rem;
 }
 
 .empty-state,
@@ -1006,6 +1153,31 @@ button:disabled {
   background: #fafaf8;
   color: #1c1c1a;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* on phones, item editing slides up from the bottom as a sheet */
+@media (max-width: 520px) {
+  .item-dialog.sheet {
+    width: 100%;
+    max-width: none;
+    max-height: 90%;
+    margin: auto 0 0;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: sheet-up 0.2s ease-out;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item-dialog.sheet {
+    animation: none;
+  }
 }
 
 .item-dialog::backdrop {

@@ -231,6 +231,23 @@ export default function App() {
     })
   }
 
+  // In-place quantity/note edits from the list. Resolves to whether the
+  // save worked, so the fields can say so.
+  async function handleUpdateEntry(entry, changes) {
+    patchEntry(entry.id, changes)
+    const { error } = await supabase.from('list_entries').update(changes).eq('id', entry.id)
+    if (error) {
+      console.error(error)
+      patchEntry(
+        entry.id,
+        Object.fromEntries(Object.keys(changes).map((key) => [key, entry[key]])),
+      )
+      showError("Couldn't save that change. Check your connection and try again.")
+      return false
+    }
+    return true
+  }
+
   function handleDeleteEntry(entry, item) {
     const name = item?.name || 'item'
     removeEntryLocally(entry.id)
@@ -403,6 +420,7 @@ export default function App() {
             activeStoreId={activeStoreId}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
+            onUpdateEntry={handleUpdateEntry}
             onChanged={loadAll}
             onStoreAdded={loadAll}
           />
