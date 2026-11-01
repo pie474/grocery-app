@@ -8,6 +8,7 @@ export default function Autocomplete({
   onChange,
   onSelect,
   placeholder,
+  ariaLabel,
   renderMeta,
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -46,6 +47,7 @@ export default function Autocomplete({
     <div className="autocomplete">
       <input
         placeholder={placeholder}
+        aria-label={ariaLabel}
         value={value}
         autoComplete="off"
         onChange={(e) => {

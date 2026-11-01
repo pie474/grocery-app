@@ -76,8 +76,14 @@ export default function ItemEditForm({
       return
     }
     setSaving(true)
-    await supabase.from('items').delete().eq('id', item.id)
+    setError(null)
+    const { error: deleteError } = await supabase.from('items').delete().eq('id', item.id)
     setSaving(false)
+    if (deleteError) {
+      console.error(deleteError)
+      setError("Couldn't delete the item. Check your connection and try again.")
+      return
+    }
     onSaved()
   }
 
@@ -99,38 +105,61 @@ export default function ItemEditForm({
       return
     }
 
-    await supabase
-      .from('items')
-      .update({
-        name: name.trim(),
-        category_id: categoryId,
-        selection_criteria: selectionCriteria.trim() || null,
-      })
-      .eq('id', itemId)
+    // Stops at the first failure so the form stays open with what was
+    // typed; anything saved before that point stays saved.
+    async function saveAll() {
+      const { error: itemError } = await supabase
+        .from('items')
+        .update({
+          name: name.trim(),
+          category_id: categoryId,
+          selection_criteria: selectionCriteria.trim() || null,
+        })
+        .eq('id', itemId)
+      if (itemError) return itemError
 
-    // Sync stores: replace the full set for this item.
-    await supabase.from('item_stores').delete().eq('item_id', itemId)
-    if (selectedStores.length) {
-      await supabase
+      // Sync stores: replace the full set for this item.
+      const { error: unlinkError } = await supabase
         .from('item_stores')
-        .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
+        .delete()
+        .eq('item_id', itemId)
+      if (unlinkError) return unlinkError
+      if (selectedStores.length) {
+        const { error: linkError } = await supabase
+          .from('item_stores')
+          .insert(selectedStores.map((store_id) => ({ item_id: itemId, store_id })))
+        if (linkError) return linkError
+      }
+
+      // Sync brands: replace the full set for this item (simplest to reason
+      // about, and brand lists are short).
+      const { error: clearBrandsError } = await supabase
+        .from('item_brands')
+        .delete()
+        .eq('item_id', itemId)
+      if (clearBrandsError) return clearBrandsError
+      // a row with a photo but no brand name is saved under the item's own
+      // name, the same as in NewItemDialog
+      const brandsToInsert = brandRows
+        .filter((r) => r.brand_name.trim() || r.image_url)
+        .map((r) => ({
+          item_id: itemId,
+          brand_name: r.brand_name.trim() || name.trim(),
+          image_url: r.image_url.trim() || null,
+          is_preferred: r.is_preferred,
+        }))
+      if (brandsToInsert.length) {
+        const { error: brandsError } = await supabase.from('item_brands').insert(brandsToInsert)
+        if (brandsError) return brandsError
+      }
     }
 
-    // Sync brands: replace the full set for this item (simplest to reason
-    // about, and brand lists are short).
-    await supabase.from('item_brands').delete().eq('item_id', itemId)
-    // a row with a photo but no brand name is saved under the item's own
-    // name, the same as in NewItemDialog
-    const brandsToInsert = brandRows
-      .filter((r) => r.brand_name.trim() || r.image_url)
-      .map((r) => ({
-        item_id: itemId,
-        brand_name: r.brand_name.trim() || name.trim(),
-        image_url: r.image_url.trim() || null,
-        is_preferred: r.is_preferred,
-      }))
-    if (brandsToInsert.length) {
-      await supabase.from('item_brands').insert(brandsToInsert)
+    const saveError = await saveAll()
+    if (saveError) {
+      console.error(saveError)
+      setError("Couldn't save all of your changes. Check your connection and try again.")
+      setSaving(false)
+      return
     }
 
     setSaving(false)
@@ -179,7 +208,6 @@ export default function ItemEditForm({
       </div>
 
       {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
-      {error && <p className="field-hint">{error}</p>}
 
       <p className="field-label">Brands</p>
       {brandRows.map((row) => (
@@ -216,6 +244,8 @@ export default function ItemEditForm({
       <button type="button" className="link-button" onClick={addBrandRow}>
         + Add another brand
       </button>
+
+      {error && <p className="form-error">{error}</p>}
 
       <div className="form-actions">
         <button

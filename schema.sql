@@ -69,7 +69,8 @@ create table list_entries (
   status text default 'needed', -- 'needed' | 'got'
   added_by uuid references members(id),
   created_at timestamptz default now(),
-  bought_at timestamptz
+  bought_at timestamptz,
+  bought_by uuid references members(id)
 );
 
 -- Turn on realtime so every household member's client gets pushed changes

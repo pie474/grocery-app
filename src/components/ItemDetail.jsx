@@ -2,6 +2,7 @@ import { formatRelativeTime } from '../utils/time'
 
 export default function ItemDetail({ item, brands }) {
   const preferred = brands.find((b) => b.is_preferred) || brands[0]
+  if (!preferred && !item.selection_criteria && !item.last_bought_at) return null
 
   return (
     <div className="item-detail">
