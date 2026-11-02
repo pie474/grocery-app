@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { searchByName } from '../utils/search'
 
 // Text input with a dropdown of matching options. Each option needs an `id`
 // and a `name`; renderMeta(option) adds optional detail on the right.
@@ -14,10 +15,8 @@ export default function Autocomplete({
   const [isOpen, setIsOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
 
-  const query = value.trim().toLowerCase()
-  const matches = query
-    ? options.filter((o) => o.name.toLowerCase().includes(query)).slice(0, 8)
-    : []
+  // spelling-tolerant: "jira" finds Jeera, "mung" finds Moong Dal
+  const matches = value.trim() ? searchByName(options, value).slice(0, 8) : []
 
   function selectOption(option) {
     onChange(option.name)

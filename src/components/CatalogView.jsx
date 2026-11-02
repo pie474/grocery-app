@@ -4,6 +4,7 @@ import NewItemDialog from './NewItemDialog'
 import CategoryManager from './CategoryManager'
 import { createItem } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
+import { searchByName } from '../utils/search'
 
 export default function CatalogView({
   items,
@@ -21,9 +22,9 @@ export default function CatalogView({
 
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]))
 
-  const filtered = items
-    .filter((i) => i.name.toLowerCase().includes(search.trim().toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const filtered = search.trim()
+    ? searchByName(items, search)
+    : [...items].sort((a, b) => a.name.localeCompare(b.name))
 
   function storeIdsFor(itemId) {
     return itemStores.filter((l) => l.item_id === itemId).map((l) => l.store_id)
