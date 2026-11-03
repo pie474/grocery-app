@@ -3,6 +3,7 @@ import PhotoPicker from './PhotoPicker'
 import AddStoreInline from './AddStoreInline'
 import Autocomplete from './Autocomplete'
 import { categoryOptions, findCategory } from '../utils/items'
+import { similarItems } from '../utils/search'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
@@ -38,6 +39,8 @@ export default function NewItemDialog({
   const trimmedName = name.trim()
   const duplicate =
     !existing && items.some((i) => i.name.toLowerCase() === trimmedName.toLowerCase())
+  // same thing under another spelling? (a hint only; it may really be new)
+  const similar = !existing && !duplicate ? similarItems(items, trimmedName) : []
   const newCategory = !!category.trim() && !findCategory(categories, category)
   const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving && !photoBusy
 
@@ -90,6 +93,11 @@ export default function NewItemDialog({
             <span className="field-label">Name</span>
             <input value={name} onChange={(e) => setName(e.target.value)} />
             {duplicate && <span className="field-hint">That item already exists.</span>}
+            {similar.length > 0 && (
+              <span className="field-note">
+                Similar to {similar.map((i) => i.name).join(', ')}, already in the catalog.
+              </span>
+            )}
           </label>
         )}
 

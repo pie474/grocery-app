@@ -4,6 +4,7 @@ import Autocomplete from './Autocomplete'
 import NewItemDialog from './NewItemDialog'
 import { createItem, linkStores } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
+import { similarItems } from '../utils/search'
 
 export default function AddItemForm({
   items,
@@ -21,6 +22,9 @@ export default function AddItemForm({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // existing items the typed name may be another spelling of, shown as a
+  // "did you mean" before creating a new item; null when not asking
+  const [suggestions, setSuggestions] = useState(null)
 
   const existing = items.find(
     (i) => i.name.toLowerCase() === name.trim().toLowerCase(),
@@ -29,8 +33,7 @@ export default function AddItemForm({
   // Every item needs at least one store, so the list can be filtered by
   // store. New items, and existing ones with no store linked, go through
   // the dialog; everything else is added straight to the list.
-  const existingHasStores =
-    !!existing && itemStores.some((link) => link.item_id === existing.id)
+  const hasStores = (item) => itemStores.some((link) => link.item_id === item.id)
 
   // entries still waiting on the list, to warn before adding a duplicate
   const neededEntries = entries.filter((e) => e.status === 'needed')
@@ -61,18 +64,44 @@ export default function AddItemForm({
     return true
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (!name.trim()) return
-    if (!existingHasStores) {
+  // Adds `item` (an existing catalog item, or null for a new one) to the list.
+  async function proceed(item) {
+    if (!item || !hasStores(item)) {
       setDialogOpen(true)
       return
     }
     setSaving(true)
-    if (!(await addToList(existing.id))) {
-      setError(`Couldn't add "${existing.name}". Check your connection and try again.`)
+    if (!(await addToList(item.id))) {
+      setError(`Couldn't add "${item.name}". Check your connection and try again.`)
     }
     setSaving(false)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    if (!existing) {
+      const similar = similarItems(items, name)
+      if (similar.length) {
+        setSuggestions(similar)
+        return
+      }
+    }
+    await proceed(existing)
+  }
+
+  async function pickSuggestion(item) {
+    setSuggestions(null)
+    setName(item.name)
+    // already on the list: stop at the name so the "Already on the list"
+    // note shows and adding it again stays a deliberate second tap
+    if (neededEntries.some((e) => e.item_id === item.id)) return
+    await proceed(item)
+  }
+
+  function addAsNew() {
+    setSuggestions(null)
+    setDialogOpen(true)
   }
 
   // Called by the dialog; returns an error message, or nothing on success.
@@ -95,6 +124,7 @@ export default function AddItemForm({
             onChange={(value) => {
               setName(value)
               setError(null)
+              setSuggestions(null)
             }}
             placeholder="Add an item…"
             ariaLabel="Item name"
@@ -111,6 +141,26 @@ export default function AddItemForm({
         </div>
 
         {error && <p className="form-error">{error}</p>}
+
+        {suggestions && (
+          <div className="did-you-mean" role="status">
+            <span>Did you mean:</span>
+            {suggestions.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="suggestion-button"
+                disabled={saving}
+                onClick={() => pickSuggestion(item)}
+              >
+                {item.name}
+              </button>
+            ))}
+            <button type="button" className="link-button" disabled={saving} onClick={addAsNew}>
+              No, add "{name.trim()}" as a new item
+            </button>
+          </div>
+        )}
 
         {onList && (
           <p className="already-on-list">

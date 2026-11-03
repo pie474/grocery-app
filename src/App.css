@@ -1075,3 +1075,23 @@ button:disabled {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* "Did you mean" prompt when a new item name looks like an existing one */
+
+.did-you-mean {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  color: #7a4a14;
+  font-size: 0.85rem;
+}
+
+.did-you-mean .suggestion-button {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.did-you-mean .link-button {
+  flex-basis: 100%;
+}
