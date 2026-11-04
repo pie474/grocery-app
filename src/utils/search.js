@@ -1,11 +1,12 @@
 // Spelling-tolerant name matching.
 //
-// Many item names are Indian words written in English letters, and there is
-// no single agreed spelling: jeera/jira, moong/mung, chana/channa,
-// methi/methee, rava/rawa. English sound-alike algorithms (Soundex,
-// Metaphone) assume English pronunciation, so instead we collapse the
-// spelling differences that romanized Indian words actually show, then
-// allow a one-letter slip on top for whatever the rules miss.
+// Many item names are Indian, Japanese, Chinese or Korean words written in
+// English letters, and there is no single agreed spelling: jeera/jira,
+// moong/mung, shoyu/shouyu, kimchi/gimchi, bok choy/pak choi. English
+// sound-alike algorithms (Soundex, Metaphone) assume English pronunciation,
+// so instead we collapse the spelling differences these romanizations
+// actually show, then allow a one-letter slip on top for whatever the rules
+// miss.
 
 // Reduces one word to a spelling-neutral key, e.g. "jeera" and "jira" both
 // become "jir", "channa" and "chana" both become "cn".
@@ -17,6 +18,8 @@ export function wordKey(word) {
     .replace(/[^a-z]/g, '')
   if (!w) return ''
   w = w
+    .replace(/[tc]ch/g, 'ch') // matcha/maccha
+    .replace(/c(?!h)/g, 'k') // hard c: daikon/daicon
     .replace(/ph/g, 'f')
     .replace(/w/g, 'v')
     .replace(/z/g, 'j')
@@ -25,9 +28,17 @@ export function wordKey(word) {
     .replace(/sh/g, 's')
     .replace(/chh?/g, 'c')
     .replace(/([bcdgjkpt])h/g, '$1') // aspirates: dh, bh, kh, gh, th ...
+    // Romanizations of Korean and Chinese disagree on whether a word's
+    // first consonant is voiced: gimchi/kimchi, bulgogi/pulgogi,
+    // doufu/tofu, bok/pak. Only the first letter, since doing it everywhere
+    // starts pairing English words (bread/broth, mint/bhindi).
+    .replace(/^([gbd])\1*/, (m) => ({ g: 'k', b: 'p', d: 't' })[m[0]].repeat(m.length))
+    .replace(/eo/g, 'o') // Korean: tteok/ttok
+    .replace(/ae/g, 'e') // Korean: japchae/japche
     .replace(/iy(?=[aeiou])/g, 'i') // dhaniya/dhania
     .replace(/ee|ii|y(?=[^aeiou]|$)/g, 'i')
-    .replace(/oo|uu|ou/g, 'u')
+    .replace(/ou/g, 'o') // Japanese long o: shouyu/shoyu
+    .replace(/oo|uu/g, 'u')
     .replace(/(.)\1+/g, '$1') // doubled letters: aa, nn, dd ...
     .replace(/(?<=.)[aeiou]$/, '') // final vowel: poha/pohe, methi/meth
     .replace(/(?<=.)a/g, '') // short "a", often dropped or written as u
@@ -87,13 +98,14 @@ export function matchRank(query, name) {
   const nKeys = words(n).map(wordKey).filter(Boolean)
   if (!qKeys.length || !nKeys.length) return null
   // A one-letter key ("chee" and "chai" both reduce to "c") says too
-  // little to match on.
-  if (qKeys.some((k) => k.length < 2)) return null
+  // little to match on by itself, and only counts as an exact match next
+  // to longer words ("kai lan").
+  if (qKeys.every((k) => k.length < 2)) return null
 
   // the last query word may still be mid-typing, so it matches as a prefix
   const last = qKeys.length - 1
   const sounds = qKeys.every((k, i) =>
-    nKeys.some((nk) => (i === last ? nk.startsWith(k) : nk === k)),
+    nKeys.some((nk) => (i === last && k.length >= 2 ? nk.startsWith(k) : nk === k)),
   )
   if (sounds) return 2
   if (qKeys.every((k) => nKeys.some((nk) => nk === k || keysClose(k, nk)))) return 3
