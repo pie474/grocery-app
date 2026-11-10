@@ -79,7 +79,11 @@ export default function AddItemForm({
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
+    // nothing typed yet: point at the field rather than adding a blank
+    if (!name.trim()) {
+      e.currentTarget.querySelector('input')?.focus()
+      return
+    }
     if (!existing) {
       const similar = similarItems(items, name)
       if (similar.length) {
@@ -135,7 +139,9 @@ export default function AddItemForm({
                 : 'never bought'
             }}
           />
-          <button type="submit" disabled={saving || !name.trim()}>
+          {/* stays enabled while empty, so it doesn't look broken before
+              anything is typed; submitting empty just focuses the field */}
+          <button type="submit" className="add-item-submit" disabled={saving}>
             {onList ? 'Add again' : 'Add'}
           </button>
         </div>
@@ -143,19 +149,21 @@ export default function AddItemForm({
         {error && <p className="form-error">{error}</p>}
 
         {suggestions && (
-          <div className="did-you-mean" role="status">
-            <span>Did you mean:</span>
-            {suggestions.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="suggestion-button"
-                disabled={saving}
-                onClick={() => pickSuggestion(item)}
-              >
-                {item.name}
-              </button>
-            ))}
+          <div className="inline-notice did-you-mean" role="status">
+            <p className="inline-notice-title">Did you mean</p>
+            <div className="suggestion-chips">
+              {suggestions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="suggestion-button"
+                  disabled={saving}
+                  onClick={() => pickSuggestion(item)}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
             <button type="button" className="link-button" disabled={saving} onClick={addAsNew}>
               No, add "{name.trim()}" as a new item
             </button>
@@ -163,12 +171,12 @@ export default function AddItemForm({
         )}
 
         {onList && (
-          <p className="already-on-list">
+          <p className="inline-notice inline-notice-warning">
             Already on the list{onList.quantity && ` (${onList.quantity})`}
           </p>
         )}
         {existing && !onList && (
-          <p className="last-bought">
+          <p className="inline-notice">
             {existing.last_bought_at
               ? `Last bought ${formatRelativeTime(existing.last_bought_at)}`
               : 'Not bought yet'}

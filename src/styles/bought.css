@@ -107,31 +107,50 @@
   accent-color: var(--accent);
 }
 
-/* room for the fixed batch bar below the last row */
-.bought-view.selecting {
-  padding-bottom: 88px;
+/* The batch bar's full height (padding, a --tap button and the top
+   border). The undo toast reads it to sit above the bar. */
+:root {
+  --batch-bar-height: calc(var(--tap) + 2 * var(--space-3) + 1px);
 }
 
+/* room for the fixed batch bar below the last row */
+.bought-view.selecting {
+  padding-bottom: calc(var(--batch-bar-height) + var(--space-4));
+}
+
+/* pinned just above the tab bar and the home indicator */
 .batch-bar {
   position: fixed;
   z-index: 10;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  height: var(--batch-bar-height);
   display: flex;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   background: var(--bg);
   border-top: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-up);
 }
 
+/* With no tab bar, fills the home-indicator strip under the bar so the
+   list doesn't show through; with one, the tab bar fills it (height 0). */
+.batch-bar::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: max(0px, env(safe-area-inset-bottom, 0px) - var(--bottom-nav-height));
+  background: var(--bg);
+}
+
 .batch-bar button {
   flex: 1;
   max-width: 220px;
-  min-height: 44px;
+  min-height: var(--tap);
 }
 
 /* Row "⋮" menu */

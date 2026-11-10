@@ -145,7 +145,7 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
 
   function runBatch(action) {
     if (!selected.length) return
-    // stay in select mode if the user cancels the delete confirm
+    // an action returns false if it did not go ahead; stay in select mode then
     if (action(selected)) exitSelecting()
   }
 
