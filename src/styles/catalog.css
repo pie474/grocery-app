@@ -1,0 +1,113 @@
+/* Catalog view */
+
+.catalog-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.catalog-header input {
+  flex: 1;
+}
+
+.catalog-manage-toggle {
+  margin-bottom: 12px;
+}
+
+/* Category manager */
+
+.category-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.category-manager h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.category-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.category-row-main {
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-row-main input {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-count {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.category-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-row .field-hint {
+  flex-basis: 100%;
+}
+
+.catalog-row {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.catalog-row-header {
+  width: 100%;
+  background: none;
+  color: var(--text);
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.item-category {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.catalog-row-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.last-bought-inline {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.catalog-edit-panel {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}

@@ -1,0 +1,370 @@
+.store-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.store-pill {
+  flex: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.store-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.add-store-button {
+  flex: none;
+  background: none;
+  color: var(--accent-text);
+  border: 1px dashed var(--accent-border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+}
+
+.add-store-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+}
+
+.add-store-inline input {
+  width: 140px;
+  padding: 6px 10px;
+}
+
+.add-store-inline button {
+  padding: 6px 10px;
+  font-size: var(--text-sm);
+}
+
+.add-store-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.add-item-form {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-item-row {
+  display: flex;
+  gap: 8px;
+}
+
+.add-item-row input {
+  flex: 1;
+}
+
+.add-item-row .autocomplete {
+  flex: 1;
+}
+
+.add-item-extra-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quantity-input {
+  flex: 0 0 110px;
+}
+
+.note-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.member-select {
+  flex: 0 0 auto;
+}
+
+/* Custom dropdown (replaces native <datalist>, which renders
+   inconsistently in Safari) */
+
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete input {
+  width: 100%;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.autocomplete-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.autocomplete-meta {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.autocomplete-option.active,
+.autocomplete-option:hover {
+  background: var(--surface-sunken);
+}
+
+.category-group {
+  margin-bottom: 20px;
+}
+
+.category-group h3 {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.list-row {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.list-row-main {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 44px square: the minimum comfortable tap target */
+.check-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  padding: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-circle {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--accent-ring);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.check-button:active .check-circle {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.list-row-toggle {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.list-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list-row-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-right: 2px solid var(--text-faint);
+  border-bottom: 2px solid var(--text-faint);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.list-row-toggle[aria-expanded='true'] .chevron {
+  transform: rotate(-135deg);
+}
+
+/* lines up with the item name, past the check button */
+.list-row-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px 38px;
+}
+
+.list-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.list-row-actions button {
+  min-height: 44px;
+}
+
+.item-name {
+  background: none;
+  color: var(--text);
+  padding: 0;
+  font-size: var(--text-base);
+  text-align: left;
+  flex: 1;
+}
+
+.quantity {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.entry-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.entry-edit-form .field-label {
+  margin: 0;
+}
+
+.list-row-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.entry-added-by {
+  font-style: italic;
+}
+
+.entry-bought-at {
+  color: var(--text-muted);
+}
+
+.add-item-form .last-bought {
+  margin: 0;
+}
+
+.already-on-list {
+  margin: 0;
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+}
+
+.last-bought {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.item-detail {
+  padding: 10px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.brand-image {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: var(--radius-sm);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.brand-name {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.selection-criteria {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+}
+
+.other-brands {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.brand-chip {
+  background: var(--surface-muted);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: var(--text-xs);
+}
+
+/* "Did you mean" prompt when a new item name looks like an existing one */
+
+.did-you-mean {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+}
+
+.did-you-mean .suggestion-button {
+  padding: 4px 10px;
+  font-size: var(--text-sm);
+}
+
+.did-you-mean .link-button {
+  flex-basis: 100%;
+}

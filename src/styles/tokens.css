@@ -1,0 +1,114 @@
+/* Design tokens. Components use these instead of raw values, so the
+   palette, type scale and dark mode are all defined in one place. */
+
+:root {
+  color-scheme: light dark;
+
+  /* surfaces */
+  --bg: #fafaf8;
+  --surface: #fff;
+  --surface-sunken: #f1efe8;
+  --surface-muted: #e4e1d6;
+
+  /* text */
+  --text: #1c1c1a;
+  --text-secondary: #40403a;
+  --text-muted: #6b6a63;
+  --text-faint: #9c9a92;
+
+  /* lines */
+  --border: #d8d5cc;
+  --border-subtle: #ece9e0;
+
+  /* brand green: --accent fills, --accent-text is for text and icons */
+  --accent: #2f6f4f;
+  --accent-text: #2f6f4f;
+  --on-accent: #fff;
+  --accent-soft: #eef4ee;
+  --accent-border: #b7d3c1;
+  --accent-ring: #8fb9a0;
+
+  /* status */
+  --danger: #a33;
+  --warning-text: #7a4a14;
+  --warning-bg: #fbefe3;
+
+  /* toast */
+  --toast-bg: #1c1c1a;
+  --toast-text: #fff;
+  --toast-action: #9fd9b4;
+  --toast-error-bg: #7a2626;
+
+  --backdrop: rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-up: 0 -4px 12px rgba(0, 0, 0, 0.06);
+
+  /* type scale */
+  --text-xs: 0.8rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.4rem;
+  /* 16px or more, or iOS Safari zooms the page when a field is focused */
+  --text-input: 16px;
+
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* height of a bar fixed to the bottom of the screen (0 when there is
+     none); anything else pinned to the bottom sits above it */
+  --bottom-nav-height: 0px;
+
+  /* the smallest comfortable tap target */
+  --tap: 44px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151614;
+    --surface: #1f201d;
+    --surface-sunken: #262723;
+    --surface-muted: #34352f;
+
+    --text: #edece6;
+    --text-secondary: #cfcdc4;
+    --text-muted: #a3a199;
+    --text-faint: #7d7b74;
+
+    --border: #3d3e37;
+    --border-subtle: #2c2d28;
+
+    --accent: #3b8560;
+    --accent-text: #7cc79d;
+    --accent-soft: #1f2e25;
+    --accent-border: #35523f;
+    --accent-ring: #4d7a60;
+
+    --danger: #e58080;
+    --warning-text: #e5b77e;
+    --warning-bg: #3a2c1a;
+
+    --toast-bg: #34352f;
+
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-up: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  }
+}

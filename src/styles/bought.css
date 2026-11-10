@@ -1,0 +1,191 @@
+/* Bought view */
+
+.bought-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.bought-toolbar button {
+  min-height: 44px;
+}
+
+.bought-toolbar .link-button {
+  font-size: var(--text-base);
+  text-decoration: none;
+}
+
+.bought-toolbar-count {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.bought-day {
+  margin-bottom: 8px;
+}
+
+/* stays in view while scrolling through that day's items */
+.bought-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin-top: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.bought-day-header h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.bought-day-count {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.bought-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.bought-row .quantity {
+  flex: none;
+}
+
+.bought-row.selected {
+  background: var(--accent-soft);
+}
+
+.bought-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.bought-row-select {
+  flex: 1;
+  min-width: 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* the day header's checkbox lines up with the rows' */
+.bought-day-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* padded out to a 44px tap target */
+.bought-row-select input,
+.bought-day-select input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 11px;
+  margin-left: 1px;
+  accent-color: var(--accent);
+}
+
+/* room for the fixed batch bar below the last row */
+.bought-view.selecting {
+  padding-bottom: 88px;
+}
+
+.batch-bar {
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-up);
+}
+
+.batch-bar button {
+  flex: 1;
+  max-width: 220px;
+  min-height: 44px;
+}
+
+/* Row "⋮" menu */
+
+.row-menu {
+  position: relative;
+  flex: none;
+}
+
+.row-menu-button {
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.row-menu-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.row-menu-list.up {
+  top: auto;
+  bottom: calc(100% + 2px);
+}
+
+.row-menu-list button {
+  min-height: 44px;
+  padding: 0 12px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  border-radius: var(--radius-sm);
+}
+
+.row-menu-list button:hover,
+.row-menu-list button:focus-visible {
+  background: var(--surface-sunken);
+}
+
+.row-menu-list .row-menu-danger {
+  color: var(--danger);
+}

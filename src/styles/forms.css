@@ -1,0 +1,120 @@
+.store-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.store-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+}
+
+.item-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brand-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.brand-row input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.preferred-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* New item dialog */
+
+.item-dialog {
+  width: calc(100% - 32px);
+  max-width: 440px;
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+
+.item-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.item-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.item-dialog-form h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.dialog-field .field-label {
+  margin: 0;
+  padding: 0;
+}
+
+.dialog-section {
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Photo picker */
+
+.photo-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.photo-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.photo-picker button {
+  padding: 6px 12px;
+  font-size: var(--text-sm);
+}
+
+.photo-error {
+  flex-basis: 100%;
+  margin: 0;
+}

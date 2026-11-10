@@ -1,0 +1,103 @@
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  /* clear the notch / home bar when installed with viewport-fit=cover */
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+header h1 {
+  font-size: var(--text-xl);
+  margin: 4px 0 12px;
+}
+
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Who's using this phone */
+
+.member-picker {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.member-picker:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.member-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.member-picker.unset .member-avatar {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.member-picker-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-picker.unset .member-picker-name {
+  color: var(--text-muted);
+}
+
+/* invisible, but it's what gets the tap and opens the phone's picker */
+.member-picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tab {
+  background: none;
+  color: var(--text-muted);
+  border-radius: 0;
+  padding: 8px 4px;
+  margin-right: 16px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}

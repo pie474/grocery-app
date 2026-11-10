@@ -1,0 +1,39 @@
+/* Undo toast */
+
+.undo-toast {
+  position: fixed;
+  z-index: 30;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  max-width: 448px;
+  margin: 0 auto;
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.undo-toast-button {
+  background: none;
+  color: var(--toast-action);
+  min-height: 44px;
+  padding: 0 4px;
+  font-weight: 600;
+  flex: none;
+}
+
+.undo-toast-error {
+  background: var(--toast-error-bg);
+}
+
+.undo-toast-error .undo-toast-button {
+  color: var(--toast-text);
+}
