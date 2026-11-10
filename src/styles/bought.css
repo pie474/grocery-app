@@ -29,7 +29,8 @@
 /* stays in view while scrolling through that day's items */
 .bought-day-header {
   position: sticky;
-  top: 0;
+  /* below the sticky app header */
+  top: var(--app-header-height, 0px);
   z-index: 1;
   display: flex;
   align-items: center;

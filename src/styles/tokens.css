@@ -116,7 +116,11 @@
     --warning-bg: #3a2c1a;
     --warning-border: #5a4428;
 
-    --toast-bg: #34352f;
+    /* light on dark, so it stands off the page and the grey buttons */
+    --toast-bg: #edece6;
+    --toast-text: #1c1c1a;
+    --toast-action: #2f6f4f;
+    --toast-error-bg: #f3c9c9;
 
     --skeleton-shine: rgba(255, 255, 255, 0.06);
 

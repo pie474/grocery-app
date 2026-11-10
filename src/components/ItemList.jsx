@@ -4,6 +4,7 @@ import EntryEditForm from './EntryEditForm'
 import ItemEditDialog from './ItemEditDialog'
 import { formatRelativeTime } from '../utils/time'
 import ListEmptyState from './ListEmptyState'
+import { sortCategories } from '../utils/items'
 
 // How long a checked-off row stays on screen: the circle fills and the
 // name is struck through, then the row collapses. Matches list.css.
@@ -95,8 +96,10 @@ export default function ItemList({
     )
   })
 
-  // Alphabetical, with uncategorized last, so groups don't jump around
-  // as entries are added.
+  // In the family's own category order (set in the category manager;
+  // alphabetical until then), with uncategorized last, so groups don't
+  // jump around as entries are added.
+  const categoryRank = Object.fromEntries(sortCategories(categories).map((c, i) => [c.id, i]))
   const groups = Object.values(
     visibleEntries.reduce((acc, entry) => {
       const category = categoriesById[itemsById[entry.item_id]?.category_id]
@@ -108,7 +111,7 @@ export default function ItemList({
   ).sort((a, b) => {
     if (a.key === 'uncategorized') return 1
     if (b.key === 'uncategorized') return -1
-    return a.name.localeCompare(b.name)
+    return categoryRank[a.key] - categoryRank[b.key]
   })
 
   if (!visibleEntries.length) {

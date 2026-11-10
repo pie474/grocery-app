@@ -1,17 +1,3 @@
-/* Hidden from sight but still read out and focusable, e.g. the real
-   checkbox inside a store chip */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 /* Dialogs: item create / edit and the category manager. A centred card on
    wide screens; on phones a sheet anchored to the bottom edge. The dialog
    itself scrolls, while its header and its action buttons stay put. */

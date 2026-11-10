@@ -13,6 +13,7 @@ export default function StoreFilter({
   const pillRefs = useRef({})
   // which edges have more pills hidden past them, for the fade
   const [edges, setEdges] = useState({ start: false, end: false })
+  const edgesRef = useRef(edges)
 
   // How many things on the list each store has, so people can see at a
   // glance which shop is worth the trip.
@@ -33,7 +34,12 @@ export default function StoreFilter({
     if (!el) return
     const start = el.scrollLeft > 1
     const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
-    setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }))
+    // Only set state on a real change. This runs after every render, and
+    // a setState there that React can't skip up front re-renders, runs
+    // this again, and loops.
+    if (edgesRef.current.start === start && edgesRef.current.end === end) return
+    edgesRef.current = { start, end }
+    setEdges(edgesRef.current)
   }
 
   useLayoutEffect(updateEdges)

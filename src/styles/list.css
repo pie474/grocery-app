@@ -642,19 +642,6 @@
   flex-wrap: wrap;
 }
 
-.entry-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  background: var(--surface-sunken);
-  border-radius: var(--radius-md);
-}
-
-.entry-edit-form .field-label {
-  margin: 0;
-}
-
 .entry-bought-at {
   color: var(--text-muted);
 }
@@ -663,45 +650,6 @@
   margin: 4px 0 0;
   color: var(--text-muted);
   font-size: var(--text-sm);
-}
-
-.item-detail {
-  padding: 10px;
-  background: var(--surface-sunken);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-}
-
-.brand-image {
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: var(--radius-sm);
-  display: block;
-  margin-bottom: 6px;
-}
-
-.brand-name {
-  margin: 0 0 4px;
-  font-weight: 600;
-}
-
-.selection-criteria {
-  margin: 4px 0 0;
-  color: var(--text-secondary);
-}
-
-.other-brands {
-  margin-top: 6px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.brand-chip {
-  background: var(--surface-muted);
-  border-radius: var(--radius-pill);
-  padding: 2px 8px;
-  font-size: var(--text-xs);
 }
 
 /* Notes under the add-item field ("Last bought…", "Already on the list",

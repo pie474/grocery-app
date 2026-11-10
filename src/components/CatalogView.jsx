@@ -65,7 +65,8 @@ export default function CatalogView({
         </div>
         <div className="catalog-toolbar">
           <span className="catalog-count">
-            {items.length === 1 ? '1 item' : `${items.length} items`}
+            {/* what's showing: everything, or the matches for a search */}
+            {filtered.length === 1 ? '1 item' : `${filtered.length} items`}
           </span>
           <button
             type="button"
