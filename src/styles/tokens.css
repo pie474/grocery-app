@@ -33,6 +33,7 @@
   /* status */
   --danger: #a33;
   --danger-soft: #fbeaea;
+  --on-danger: #fff; /* text on a --danger fill */
   --warning-text: #7a4a14;
   --warning-bg: #fbefe3;
   --warning-border: #ecd2b4;
@@ -110,6 +111,7 @@
 
     --danger: #e58080;
     --danger-soft: #3a2222;
+    --on-danger: #151614;
     --warning-text: #e5b77e;
     --warning-bg: #3a2c1a;
     --warning-border: #5a4428;

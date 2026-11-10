@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import ItemEditForm from './ItemEditForm'
+import ItemEditDialog from './ItemEditDialog'
 import NewItemDialog from './NewItemDialog'
 import CategoryManager from './CategoryManager'
 import { createItem } from '../utils/items'
@@ -126,18 +126,16 @@ export default function CatalogView({
             </button>
 
             {editingId === item.id && (
-              <div className="catalog-edit-panel">
-                <ItemEditForm
-                  item={item}
-                  categories={categories}
-                  stores={stores}
-                  storeIds={storeIdsFor(item.id)}
-                  brands={brandsFor(item.id)}
-                  onSaved={handleSaved}
-                  onCancel={() => setEditingId(null)}
-                  onStoreAdded={onStoreAdded}
-                />
-              </div>
+              <ItemEditDialog
+                item={item}
+                categories={categories}
+                stores={stores}
+                storeIds={storeIdsFor(item.id)}
+                brands={brandsFor(item.id)}
+                onSaved={handleSaved}
+                onClose={() => setEditingId(null)}
+                onStoreAdded={onStoreAdded}
+              />
             )}
           </div>
         ))}

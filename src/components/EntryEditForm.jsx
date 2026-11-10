@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
+// Edits one list entry (how much, a note, who added it) in place, inside
+// the list row's expanded panel, right under the item it belongs to.
 export default function EntryEditForm({ entry, itemName, members = [], onSaved, onCancel }) {
   const [quantity, setQuantity] = useState(entry.quantity || '')
   const [note, setNote] = useState(entry.note || '')
@@ -30,45 +32,56 @@ export default function EntryEditForm({ entry, itemName, members = [], onSaved, 
   }
 
   return (
-    <form className="entry-edit-form" onSubmit={handleSubmit}>
-      <p className="field-label">Editing {itemName}</p>
-      <div className="add-item-extra-row">
-        <input
-          className="quantity-input"
-          placeholder="Qty (e.g. 2, 1 gal)"
-          aria-label="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-        <input
-          className="note-input"
-          placeholder="Note (optional)"
-          aria-label="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+    <form
+      className="entry-form"
+      aria-label={`Quantity and note for ${itemName}`}
+      onSubmit={handleSubmit}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onCancel()
+      }}
+    >
+      <div className="entry-form-fields">
+        <label className="dialog-field entry-form-quantity">
+          <span className="field-label">Quantity</span>
+          <input
+            autoFocus
+            placeholder="e.g. 2, 1 gal"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+        </label>
         {members.length > 0 && (
-          <select
-            className="member-select"
-            aria-label="Added by"
-            value={addedBy}
-            onChange={(e) => setAddedBy(e.target.value)}
-          >
-            <option value="">Added by…</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <label className="dialog-field entry-form-member">
+            <span className="field-label">Added by</span>
+            <select value={addedBy} onChange={(e) => setAddedBy(e.target.value)}>
+              <option value="">No one</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
+        <label className="dialog-field entry-form-note">
+          <span className="field-label">Note</span>
+          <input
+            placeholder="e.g. ripe ones for tonight"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </label>
       </div>
-      {error && <p className="form-error">{error}</p>}
-      <div className="form-actions">
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="dialog-actions">
         <button type="submit" disabled={saving}>
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" className="secondary-button" onClick={onCancel}>
+        <button type="button" className="secondary-button" onClick={onCancel} disabled={saving}>
           Cancel
         </button>
       </div>

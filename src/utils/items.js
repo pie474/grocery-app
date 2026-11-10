@@ -49,9 +49,26 @@ export async function createItem(details, categories) {
   return linkStores(newItem.id, details.stores)
 }
 
+// The household's own order (store-aisle order, set in the category
+// manager) first, then alphabetical. Categories that haven't been placed
+// yet, and every category before migrations/003_category_order.sql has
+// run (the column is simply missing then), sort after the placed ones.
+export function sortCategories(categories) {
+  return [...categories].sort((a, b) => {
+    const aOrder = a.sort_order ?? null
+    const bOrder = b.sort_order ?? null
+    if (aOrder !== bOrder) {
+      if (aOrder === null) return 1
+      if (bOrder === null) return -1
+      return aOrder - bOrder
+    }
+    return a.name.localeCompare(b.name)
+  })
+}
+
 // Categories rows already have the { id, name } shape Autocomplete wants.
 export function categoryOptions(categories) {
-  return [...categories].sort((a, b) => a.name.localeCompare(b.name))
+  return sortCategories(categories)
 }
 
 export function findCategory(categories, name) {

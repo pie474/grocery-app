@@ -29,8 +29,14 @@ body {
   font-size: var(--text-xs);
 }
 
-/* 16px or more, or iOS Safari zooms the page when a field is focused */
-select {
+/* Text fields only: checkboxes, radios and file inputs keep their native
+   look (a border and padding on those pull them away from their labels).
+   :where() keeps this at element-level specificity, so any component rule
+   still wins. 16px text or more, or iOS Safari zooms the page when a field
+   is focused. */
+select,
+textarea,
+input:where(:not([type='checkbox'], [type='radio'], [type='file'], [type='range'], [type='color'])) {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 10px;
@@ -39,14 +45,17 @@ select {
   color: var(--text);
 }
 
-input,
-textarea {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px;
-  font-size: var(--text-input);
-  background: var(--surface);
-  color: var(--text);
+select:focus-visible,
+textarea:focus-visible,
+input:where(:not([type='checkbox'], [type='radio'], [type='file'], [type='range'], [type='color'])):focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent);
 }
 
 textarea {

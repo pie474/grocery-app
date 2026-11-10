@@ -27,7 +27,8 @@ create table stores (
 create table categories (
   id uuid primary key default gen_random_uuid(),
   household_id uuid references households(id) on delete cascade,
-  name text not null
+  name text not null,
+  sort_order integer -- store-aisle order; null = not placed yet (sorts last)
 );
 
 -- names are unique per household, ignoring case
