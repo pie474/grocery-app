@@ -25,10 +25,11 @@ export default function App() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
-  const [toast, setToast] = useState(null) // { message, undo }
+  const [toast, setToast] = useState(null) // { id, message, undo, error }
   // who's using this phone: recorded as who added or bought things here
   const [deviceMemberId, setDeviceMemberIdState] = useState(getDeviceMemberId)
   const toastTimeoutRef = useRef(null)
+  const toastIdRef = useRef(0)
 
   const loadAll = useCallback(async () => {
     const results = await Promise.all([
@@ -124,10 +125,13 @@ export default function App() {
   const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
 
   // undo: a function for an Undo button, or null for a plain message.
+  // A new toast replaces the current one and restarts its timer; errors
+  // stay up longer so there's time to read them.
   function showToast(message, undo, { error = false } = {}) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    setToast({ message, undo, error })
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 6000)
+    toastIdRef.current += 1
+    setToast({ id: toastIdRef.current, message, undo, error })
+    toastTimeoutRef.current = setTimeout(() => setToast(null), error ? 8000 : 6000)
   }
 
   function showError(message) {
@@ -259,55 +263,102 @@ export default function App() {
     })
   }
 
-  function countLabel(count) {
-    return count === 1 ? 'this purchase record' : `these ${count} purchase records`
+  // What a Bought-tab action applied to, for its toast: the item's name
+  // for one entry, otherwise a count.
+  function countLabel(selected, noun) {
+    if (selected.length === 1) {
+      const item = items.find((i) => i.id === selected[0].item_id)
+      return `"${item?.name || 'item'}"`
+    }
+    return `${selected.length} ${noun}`
   }
 
   // The Bought tab's actions take a list of entries so a single row and a
-  // multi-select batch share one path. Each updates the screen right
-  // away and returns false only if the user backed out at the confirm.
+  // multi-select batch share one path. Both update the screen right away
+  // and offer Undo rather than asking first, so they always go ahead and
+  // return true (BoughtView leaves select mode on true).
   function handleMoveBack(selected) {
     const ids = selected.map((e) => e.id)
     setEntries((prev) =>
       prev.map((e) => (ids.includes(e.id) ? { ...e, ...NEEDED } : e)),
     )
-    saveInBackground(
+    const saved = saveInBackground(
       () => supabase.from('list_entries').update(NEEDED).in('id', ids),
       selected,
       selected.length === 1
         ? "Couldn't move it back to the list. Check your connection and try again."
         : "Couldn't move them back to the list. Check your connection and try again.",
     )
+
+    showToast(`Moved ${countLabel(selected, 'items')} back to the list`, async () => {
+      if (!(await saved)) return
+      selected.forEach(restoreEntry)
+      // each entry has its own bought_at, so they're saved one by one
+      const results = await Promise.all(
+        selected.map((e) =>
+          supabase
+            .from('list_entries')
+            .update({ status: e.status, bought_at: e.bought_at, bought_by: e.bought_by })
+            .eq('id', e.id),
+        ),
+      )
+      const failed = selected.filter((e, i) => results[i].error)
+      if (failed.length) {
+        console.error(results.find((r) => r.error).error)
+        failed.forEach((e) => patchEntry(e.id, NEEDED))
+        showError(
+          failed.length === 1
+            ? "Couldn't undo. It's still back on the list."
+            : `Couldn't undo ${failed.length} of them. They're still back on the list.`,
+        )
+      }
+      await recomputeLastBoughtFor(selected)
+    })
     return true
   }
 
   function handleDeleteForever(selected) {
-    const item = selected.length === 1 && items.find((i) => i.id === selected[0].item_id)
-    const confirmed = confirm(
-      `Permanently delete ${countLabel(selected.length)}${item ? ` for "${item.name}"` : ''}? This can't be undone.`,
-    )
-    if (!confirmed) return false
     const ids = selected.map((e) => e.id)
     setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
-    saveInBackground(
+    const deleted = saveInBackground(
       () => supabase.from('list_entries').delete().in('id', ids),
       selected,
       "Couldn't delete. Check your connection and try again.",
     )
+
+    showToast(`Deleted ${countLabel(selected, 'purchase records')}`, async () => {
+      if (!(await deleted)) return
+      selected.forEach(restoreEntry)
+      // same ids and timestamps, so they come back exactly as they were
+      const { error } = await supabase.from('list_entries').insert(selected)
+      if (error) {
+        console.error(error)
+        setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
+        showError("Couldn't undo. Still deleted.")
+        return
+      }
+      await recomputeLastBoughtFor(selected)
+    })
     return true
   }
 
+  function recomputeLastBoughtFor(affected) {
+    return Promise.all([...new Set(affected.map((e) => e.item_id))].map(recomputeLastBought))
+  }
+
   // Runs a save after the screen has already been updated; on failure
-  // puts the entries back as they were and says so.
+  // puts the entries back as they were and says so. Resolves to whether
+  // it worked, so Undo can wait for it instead of racing it.
   async function saveInBackground(save, originals, errorMessage) {
     const { error } = await save()
     if (error) {
       console.error(error)
       originals.forEach(restoreEntry)
       showError(errorMessage)
-      return
+      return false
     }
-    await Promise.all([...new Set(originals.map((e) => e.item_id))].map(recomputeLastBought))
+    await recomputeLastBoughtFor(originals)
+    return true
   }
 
   function retryLoad() {
@@ -432,6 +483,7 @@ export default function App() {
       )}
 
       <UndoToast
+        id={toast?.id}
         message={toast?.message}
         error={toast?.error}
         onUndo={toast?.undo}

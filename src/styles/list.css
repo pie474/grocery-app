@@ -75,6 +75,13 @@
   flex: 1;
 }
 
+.add-item-submit {
+  flex: none;
+  min-width: 72px;
+  min-height: var(--tap);
+  font-weight: 600;
+}
+
 .add-item-extra-row {
   display: flex;
   gap: 8px;
@@ -118,16 +125,22 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  max-height: 220px;
+  /* about five rows, so it doesn't run far down over the page */
+  max-height: calc(5.5 * var(--tap));
   overflow-y: auto;
+}
+
+.autocomplete-list[hidden] {
+  display: none;
 }
 
 .autocomplete-option {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 10px;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-1) 10px;
   border-radius: var(--radius-sm);
   font-size: var(--text-base);
   cursor: pointer;
@@ -294,16 +307,6 @@
   color: var(--text-muted);
 }
 
-.add-item-form .last-bought {
-  margin: 0;
-}
-
-.already-on-list {
-  margin: 0;
-  color: var(--warning-text);
-  font-size: var(--text-sm);
-}
-
 .last-bought {
   margin: 4px 0 0;
   color: var(--text-muted);
@@ -349,22 +352,56 @@
   font-size: var(--text-xs);
 }
 
+/* Notes under the add-item field ("Last bought…", "Already on the list",
+   "Did you mean"): one quiet boxed style, tinted when it's a warning */
+
+.inline-notice {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.inline-notice-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.inline-notice-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 /* "Did you mean" prompt when a new item name looks like an existing one */
 
 .did-you-mean {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.suggestion-chips {
+  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  color: var(--warning-text);
-  font-size: var(--text-sm);
+  gap: var(--space-2);
 }
 
 .did-you-mean .suggestion-button {
-  padding: 4px 10px;
-  font-size: var(--text-sm);
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: var(--text-base);
+  font-weight: 600;
 }
 
 .did-you-mean .link-button {
-  flex-basis: 100%;
+  min-height: var(--tap);
+  color: var(--text-secondary);
 }

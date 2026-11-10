@@ -1,33 +1,98 @@
 /* Undo toast */
 
+/* Floats above whatever is pinned to the bottom: the tab bar, the home
+   indicator, and the Bought tab's batch bar while it's showing. */
+.undo-toast-region {
+  --toast-height: 68px;
+  --toast-gap: var(--space-3);
+}
+
+.app:has(.batch-bar) .undo-toast-region {
+  --toast-lift: var(--batch-bar-height);
+}
+
+/* takes the toast's room at the end of the page, so the last row can
+   always be scrolled out from under it */
+.undo-toast-region.active {
+  height: calc(var(--toast-height) + var(--toast-gap));
+}
+
 .undo-toast {
   position: fixed;
   z-index: 30;
-  left: 16px;
-  right: 16px;
-  bottom: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: calc(
+    var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--toast-lift, 0px) +
+      var(--toast-gap)
+  );
   max-width: 448px;
+  min-height: var(--toast-height);
   margin: 0 auto;
   background: var(--toast-bg);
   color: var(--toast-text);
   border-radius: var(--radius-lg);
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   font-size: var(--text-sm);
   box-shadow: var(--shadow-md);
+  animation: toast-in var(--duration) var(--ease);
+  transition: bottom var(--duration) var(--ease);
+}
+
+.undo-toast.leaving {
+  animation: toast-out var(--duration) var(--ease) forwards;
+  pointer-events: none;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* fade only: no sliding for people who've asked for less motion */
+@media (prefers-reduced-motion: reduce) {
+  .undo-toast {
+    transition: none;
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes toast-out {
+    to {
+      opacity: 0;
+    }
+  }
 }
 
 .undo-toast-button {
   background: none;
   color: var(--toast-action);
-  min-height: 44px;
-  padding: 0 4px;
+  min-height: var(--tap);
+  padding: 0 var(--space-1);
   font-weight: 600;
   flex: none;
+}
+
+/* disabled only while animating out; don't dim it on the way */
+.undo-toast-button:disabled {
+  opacity: 1;
 }
 
 .undo-toast-error {
