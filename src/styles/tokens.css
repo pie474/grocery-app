@@ -68,7 +68,7 @@
 
   /* height of a bar fixed to the bottom of the screen (0 when there is
      none); anything else pinned to the bottom sits above it */
-  --bottom-nav-height: 0px;
+  --bottom-nav-height: 60px;
 
   /* the smallest comfortable tap target */
   --tap: 44px;

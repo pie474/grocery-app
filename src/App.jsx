@@ -7,7 +7,18 @@ import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
 import MemberPicker from './components/MemberPicker'
-import { getDeviceMemberId, setDeviceMemberId } from './utils/members'
+import MemberPrompt from './components/MemberPrompt'
+import AppHeader from './components/AppHeader'
+import BottomNav from './components/BottomNav'
+import {
+  getDeviceMemberId,
+  setDeviceMemberId,
+  getMemberPromptDismissed,
+  setMemberPromptDismissed,
+} from './utils/members'
+
+// header title for each view
+const VIEW_TITLES = { list: 'Grocery List', bought: 'Bought', catalog: 'Catalog' }
 
 // list_entries fields for an entry that's back on the list
 const NEEDED = { status: 'needed', bought_at: null, bought_by: null }
@@ -25,6 +36,8 @@ export default function App() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
+  // "Not now" on the first-run "who's using this phone?" card
+  const [memberPromptDismissed, setMemberPromptDismissedState] = useState(getMemberPromptDismissed)
   const [toast, setToast] = useState(null) // { message, undo }
   // who's using this phone: recorded as who added or bought things here
   const [deviceMemberId, setDeviceMemberIdState] = useState(getDeviceMemberId)
@@ -120,8 +133,21 @@ export default function App() {
     setDeviceMemberId(memberId)
   }
 
+  function dismissMemberPrompt() {
+    setMemberPromptDismissedState(true)
+    setMemberPromptDismissed()
+  }
+
+  // each tab starts at the top, not at the last tab's scroll position
+  function changeView(next) {
+    if (next === view) return
+    setView(next)
+    window.scrollTo(0, 0)
+  }
+
   // ignores a remembered member who has since been removed
   const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
+  const showMemberPrompt = members.length > 0 && !currentMemberId && !memberPromptDismissed
 
   // undo: a function for an Undo button, or null for a plain message.
   function showToast(message, undo, { error = false } = {}) {
@@ -330,38 +356,16 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <div className="app-header-top">
-          <h1>Grocery List</h1>
-          {members.length > 0 && (
-            <MemberPicker
-              members={members}
-              memberId={currentMemberId}
-              onChange={handleDeviceMemberChange}
-            />
-          )}
-        </div>
-        <nav className="view-tabs">
-          <button
-            className={view === 'list' ? 'tab active' : 'tab'}
-            onClick={() => setView('list')}
-          >
-            List
-          </button>
-          <button
-            className={view === 'bought' ? 'tab active' : 'tab'}
-            onClick={() => setView('bought')}
-          >
-            Bought
-          </button>
-          <button
-            className={view === 'catalog' ? 'tab active' : 'tab'}
-            onClick={() => setView('catalog')}
-          >
-            Catalog
-          </button>
-        </nav>
-      </header>
+      <AppHeader title={VIEW_TITLES[view]}>
+        {/* while the first-run card is up it does the asking instead */}
+        {members.length > 0 && !showMemberPrompt && (
+          <MemberPicker
+            members={members}
+            memberId={currentMemberId}
+            onChange={handleDeviceMemberChange}
+          />
+        )}
+      </AppHeader>
 
       {loadError && (
         <p className="sync-banner" role="alert">
@@ -370,6 +374,14 @@ export default function App() {
             Retry
           </button>
         </p>
+      )}
+
+      {showMemberPrompt && (
+        <MemberPrompt
+          members={members}
+          onChoose={handleDeviceMemberChange}
+          onDismiss={dismissMemberPrompt}
+        />
       )}
 
       {view === 'list' && (
@@ -430,6 +442,12 @@ export default function App() {
           onStoreAdded={loadAll}
         />
       )}
+
+      <BottomNav
+        view={view}
+        onChange={changeView}
+        neededCount={entries.filter((e) => e.status === 'needed').length}
+      />
 
       <UndoToast
         message={toast?.message}
