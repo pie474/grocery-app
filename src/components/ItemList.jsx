@@ -3,6 +3,7 @@ import ItemDetail from './ItemDetail'
 import EntryEditForm from './EntryEditForm'
 import ItemEditForm from './ItemEditForm'
 import { formatRelativeTime } from '../utils/time'
+import ListEmptyState from './ListEmptyState'
 
 // How long a checked-off row stays on screen: the circle fills and the
 // name is struck through, then the row collapses. Matches list.css.
@@ -21,6 +22,7 @@ export default function ItemList({
   stores,
   members = [],
   activeStoreId,
+  onClearStore,
   onMarkBought,
   onDelete,
   onChanged,
@@ -110,7 +112,14 @@ export default function ItemList({
   })
 
   if (!visibleEntries.length) {
-    return <p className="empty-state">Nothing needed here right now.</p>
+    return (
+      <ListEmptyState
+        entries={entries}
+        stores={stores}
+        activeStoreId={activeStoreId}
+        onClearStore={onClearStore}
+      />
+    )
   }
 
   return (

@@ -2,16 +2,57 @@
 
 .catalog-header {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
-.catalog-header input {
+.catalog-search-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.catalog-search-row input {
   flex: 1;
+  min-width: 0;
 }
 
+.catalog-new-button {
+  flex: none;
+  white-space: nowrap;
+  padding-inline: 14px;
+}
+
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.catalog-count {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* a quiet secondary action: clearly a button, but it doesn't compete
+   with "+ New item" */
 .catalog-manage-toggle {
-  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  margin-right: -10px;
+  padding: 0 10px;
+  background: none;
+  color: var(--accent-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.catalog-manage-toggle:active {
+  background: var(--accent-soft);
 }
 
 /* Category manager */
@@ -87,9 +128,24 @@
   text-align: left;
 }
 
+/* a quiet chip; "Uncategorized" is fainter still */
 .item-category {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
   color: var(--text-muted);
   font-size: var(--text-xs);
+}
+
+.item-category.none {
+  background: none;
+  color: var(--text-faint);
+  font-style: italic;
 }
 
 .catalog-row-title {
