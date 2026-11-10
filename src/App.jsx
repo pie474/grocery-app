@@ -7,6 +7,7 @@ import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
 import MemberPicker from './components/MemberPicker'
+import ListSkeleton from './components/ListSkeleton'
 import { getDeviceMemberId, setDeviceMemberId } from './utils/members'
 
 // list_entries fields for an entry that's back on the list
@@ -315,12 +316,24 @@ export default function App() {
     loadAll()
   }
 
-  if (loading) return <p className="loading">Loading…</p>
+  if (loading) return <ListSkeleton />
 
   if (!hasLoaded) {
     return (
       <div className="load-error" role="alert">
-        <p>Couldn't load the list. Check your connection.</p>
+        <span className="load-error-icon" aria-hidden="true">
+          {/* cloud with a line through it */}
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 18h10.5a3.5 3.5 0 0 0 .6-6.95A6 6 0 0 0 6.6 9.2 4.5 4.5 0 0 0 7 18z" />
+            <path d="M4 4l16 16" />
+          </svg>
+        </span>
+        <h1 className="load-error-title">Couldn't load your list</h1>
+        <p className="load-error-text">
+          Check that you're connected to the internet, then try again. Nothing you added
+          before has been lost.
+        </p>
         <button type="button" onClick={retryLoad}>
           Try again
         </button>
@@ -364,18 +377,26 @@ export default function App() {
       </header>
 
       {loadError && (
-        <p className="sync-banner" role="alert">
-          Couldn't refresh the list. You may be offline.{' '}
-          <button type="button" className="link-button" onClick={loadAll}>
+        <div className="sync-banner" role="alert">
+          <svg className="sync-banner-icon" width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+            strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3.5l9.5 16.5h-19z" />
+            <path d="M12 10v4.5M12 17.5v.01" />
+          </svg>
+          <p className="sync-banner-text">Couldn't refresh. You may be offline; this list might be out of date.</p>
+          <button type="button" className="sync-banner-retry" onClick={loadAll}>
             Retry
           </button>
-        </p>
+        </div>
       )}
 
       {view === 'list' && (
         <>
           <StoreFilter
             stores={stores}
+            entries={entries}
+            itemStores={itemStores}
             activeStoreId={activeStoreId}
             onChange={setActiveStoreId}
             onStoreAdded={loadAll}
@@ -401,6 +422,7 @@ export default function App() {
             stores={stores}
             members={members}
             activeStoreId={activeStoreId}
+            onClearStore={() => setActiveStoreId(null)}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
             onChanged={loadAll}

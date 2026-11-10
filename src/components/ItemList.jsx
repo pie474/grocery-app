@@ -3,6 +3,7 @@ import ItemDetail from './ItemDetail'
 import EntryEditForm from './EntryEditForm'
 import ItemEditForm from './ItemEditForm'
 import { formatRelativeTime } from '../utils/time'
+import ListEmptyState from './ListEmptyState'
 
 export default function ItemList({
   entries,
@@ -13,6 +14,7 @@ export default function ItemList({
   stores,
   members = [],
   activeStoreId,
+  onClearStore,
   onMarkBought,
   onDelete,
   onChanged,
@@ -64,7 +66,14 @@ export default function ItemList({
   })
 
   if (!visibleEntries.length) {
-    return <p className="empty-state">Nothing needed here right now.</p>
+    return (
+      <ListEmptyState
+        entries={entries}
+        stores={stores}
+        activeStoreId={activeStoreId}
+        onClearStore={onClearStore}
+      />
+    )
   }
 
   return (

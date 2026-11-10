@@ -5,6 +5,7 @@ import CategoryManager from './CategoryManager'
 import { createItem } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 import { searchByName } from '../utils/search'
+import EmptyState from './EmptyState'
 
 export default function CatalogView({
   items,
@@ -50,20 +51,37 @@ export default function CatalogView({
   return (
     <div className="catalog-view">
       <div className="catalog-header">
-        <input
-          placeholder="Search items…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button onClick={() => setCreating(true)}>+ New item</button>
+        <div className="catalog-search-row">
+          <input
+            type="search"
+            placeholder="Search items…"
+            aria-label="Search items"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button type="button" className="catalog-new-button" onClick={() => setCreating(true)}>
+            + New item
+          </button>
+        </div>
+        <div className="catalog-toolbar">
+          <span className="catalog-count">
+            {items.length === 1 ? '1 item' : `${items.length} items`}
+          </span>
+          <button
+            type="button"
+            className="catalog-manage-toggle"
+            onClick={() => setManagingCategories(true)}
+          >
+            {/* tag */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" />
+              <circle cx="8" cy="8" r="1.5" />
+            </svg>
+            Manage categories
+          </button>
+        </div>
       </div>
-      <button
-        type="button"
-        className="link-button catalog-manage-toggle"
-        onClick={() => setManagingCategories(true)}
-      >
-        Manage categories
-      </button>
 
       {managingCategories && (
         <CategoryManager
@@ -102,8 +120,8 @@ export default function CatalogView({
                   </span>
                 )}
               </span>
-              <span className="item-category">
-                {categoriesById[item.category_id]?.name || 'uncategorized'}
+              <span className={categoriesById[item.category_id] ? 'item-category' : 'item-category none'}>
+                {categoriesById[item.category_id]?.name || 'Uncategorized'}
               </span>
             </button>
 
@@ -123,7 +141,24 @@ export default function CatalogView({
             )}
           </div>
         ))}
-        {!filtered.length && <p className="empty-state">No items match that search.</p>}
+        {!filtered.length &&
+          (search.trim() ? (
+            <EmptyState
+              icon="search"
+              title={`No items match "${search.trim()}"`}
+              hint="Check the spelling, or add it to the catalog."
+              actionLabel={`Create "${search.trim()}"`}
+              onAction={() => setCreating(true)}
+            />
+          ) : (
+            <EmptyState
+              icon="catalog"
+              title="No items yet"
+              hint="Everything you add to the list is saved here, with its stores, brands and tips."
+              actionLabel="+ New item"
+              onAction={() => setCreating(true)}
+            />
+          ))}
       </div>
     </div>
   )

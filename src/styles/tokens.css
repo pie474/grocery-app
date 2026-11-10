@@ -32,12 +32,16 @@
   --danger: #a33;
   --warning-text: #7a4a14;
   --warning-bg: #fbefe3;
+  --warning-border: #ecd2b4;
 
   /* toast */
   --toast-bg: #1c1c1a;
   --toast-text: #fff;
   --toast-action: #9fd9b4;
   --toast-error-bg: #7a2626;
+
+  /* the highlight that sweeps across loading placeholders */
+  --skeleton-shine: rgba(255, 255, 255, 0.55);
 
   --backdrop: rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -102,8 +106,11 @@
     --danger: #e58080;
     --warning-text: #e5b77e;
     --warning-bg: #3a2c1a;
+    --warning-border: #5a4428;
 
     --toast-bg: #34352f;
+
+    --skeleton-shine: rgba(255, 255, 255, 0.06);
 
     --backdrop: rgba(0, 0, 0, 0.6);
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);

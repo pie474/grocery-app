@@ -1,20 +1,28 @@
+// Reads naturally after "added" or "last bought": "just now", "20 min ago",
+// "5 hr ago", "yesterday", "3 days ago", then a date ("Oct 11", with the
+// year once it isn't this year). Lower case, since it sits mid-sentence.
 export function formatRelativeTime(dateStr) {
   if (!dateStr) return null
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.round(diffMs / 60000)
+  const date = new Date(dateStr)
+  const now = new Date()
+  // a timestamp slightly in the future (another phone's clock) is "just now"
+  const mins = Math.floor((now - date) / 60000)
 
   if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
+  if (mins < 60) return `${mins} min ago`
 
-  const hours = Math.round(mins / 60)
-  if (hours < 24) return `${hours}h ago`
+  const hours = Math.floor(mins / 60)
+  // calendar days, so 11pm seen at 9am the next morning is "yesterday"
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / 86400000)
+  // but a couple of hours across midnight is still counted in hours
+  if (days === 0 || hours < 6) return `${hours} hr ago`
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days} days ago`
 
-  const days = Math.round(hours / 24)
-  if (days < 7) return `${days}d ago`
-
-  return new Date(dateStr).toLocaleDateString(undefined, {
+  return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
+    ...(date.getFullYear() !== now.getFullYear() && { year: 'numeric' }),
   })
 }
 
