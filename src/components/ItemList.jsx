@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ItemDetail from './ItemDetail'
 import EntryEditForm from './EntryEditForm'
-import ItemEditForm from './ItemEditForm'
+import ItemEditDialog from './ItemEditDialog'
 import { formatRelativeTime } from '../utils/time'
 
 export default function ItemList({
@@ -19,8 +19,8 @@ export default function ItemList({
   onStoreAdded,
 }) {
   const [expandedId, setExpandedId] = useState(null)
-  // what the expanded panel is editing: 'entry' (qty, note, who) or
-  // 'item' (the catalog item's brands, stores and tips), or null
+  // what the expanded panel is editing: 'entry' (qty, note, who; inline)
+  // or 'item' (the catalog item's details; in a dialog), or null
   const [editing, setEditing] = useState(null)
 
   // Edit and Remove live in the expanded panel, so the row itself only
@@ -117,7 +117,8 @@ export default function ItemList({
                 </div>
                 {isExpanded && (
                   <div className="list-row-panel">
-                    {editing === 'entry' && (
+                    {item && <ItemDetail item={item} brands={itemBrands} />}
+                    {editing === 'entry' ? (
                       <EntryEditForm
                         entry={entry}
                         itemName={item?.name}
@@ -125,52 +126,46 @@ export default function ItemList({
                         onSaved={finishEditing}
                         onCancel={() => setEditing(null)}
                       />
-                    )}
-                    {editing === 'item' && item && (
-                      <div className="catalog-edit-panel">
-                        <ItemEditForm
-                          item={item}
-                          categories={categories}
-                          stores={stores}
-                          storeIds={itemStores
-                            .filter((link) => link.item_id === item.id)
-                            .map((link) => link.store_id)}
-                          brands={itemBrands}
-                          onSaved={finishEditing}
-                          onCancel={() => setEditing(null)}
-                          onStoreAdded={onStoreAdded}
-                        />
-                      </div>
-                    )}
-                    {!editing && (
-                      <>
-                        {item && <ItemDetail item={item} brands={itemBrands} />}
+                    ) : (
+                      <div className="entry-panel-actions">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => setEditing('entry')}
+                        >
+                          Edit quantity &amp; note
+                        </button>
                         {item && (
                           <button
                             type="button"
-                            className="link-button"
+                            className="secondary-button"
                             onClick={() => setEditing('item')}
                           >
-                            Edit brands, stores &amp; tips
+                            Edit item details
                           </button>
                         )}
-                        <div className="list-row-actions">
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => setEditing('entry')}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="danger-button"
-                            onClick={() => onDelete(entry, item)}
-                          >
-                            Remove from list
-                          </button>
-                        </div>
-                      </>
+                        <button
+                          type="button"
+                          className="danger-button"
+                          onClick={() => onDelete(entry, item)}
+                        >
+                          Remove from list
+                        </button>
+                      </div>
+                    )}
+                    {editing === 'item' && item && (
+                      <ItemEditDialog
+                        item={item}
+                        categories={categories}
+                        stores={stores}
+                        storeIds={itemStores
+                          .filter((link) => link.item_id === item.id)
+                          .map((link) => link.store_id)}
+                        brands={itemBrands}
+                        onSaved={finishEditing}
+                        onClose={() => setEditing(null)}
+                        onStoreAdded={onStoreAdded}
+                      />
                     )}
                   </div>
                 )}

@@ -47,7 +47,7 @@ export default function PhotoPicker({
         {uploading ? 'Uploading…' : imageUrl ? 'Change photo' : addLabel}
       </button>
       {removable && imageUrl && !uploading && (
-        <button type="button" className="icon-button" onClick={() => onChange('')}>
+        <button type="button" className="quiet-button danger" onClick={() => onChange('')}>
           Remove photo
         </button>
       )}

@@ -1,43 +1,20 @@
-.store-checkboxes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.store-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--text-sm);
-}
-
-.item-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.brand-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.brand-row input {
-  flex: 1;
-  min-width: 100px;
-}
-
-.preferred-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--text-xs);
+/* Hidden from sight but still read out and focusable, e.g. the real
+   checkbox inside a store chip */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 
-/* New item dialog */
+/* Dialogs: item create / edit and the category manager. A centred card on
+   wide screens; on phones a sheet anchored to the bottom edge. The dialog
+   itself scrolls, while its header and its action buttons stay put. */
 
 .item-dialog {
   width: calc(100% - 32px);
@@ -49,28 +26,126 @@
   background: var(--bg);
   color: var(--text);
   box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  /* scrolling to the end of the sheet doesn't scroll the page behind it */
+  overscroll-behavior: contain;
 }
 
 .item-dialog::backdrop {
   background: var(--backdrop);
 }
 
+@media (max-width: 599px) {
+  .item-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100% - 24px - env(safe-area-inset-top));
+    margin: auto 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .item-dialog[open] {
+    animation: dialog-in var(--duration) var(--ease);
+  }
+
+  .item-dialog[open]::backdrop,
+  .confirm-dialog[open]::backdrop {
+    animation: backdrop-in var(--duration) var(--ease);
+  }
+
+  @media (max-width: 599px) {
+    .item-dialog[open] {
+      animation-name: sheet-in;
+    }
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .item-dialog-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  min-height: 100%;
 }
 
-.item-dialog-form h2 {
+.dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  background: var(--bg);
+}
+
+.dialog-header h2 {
   margin: 0;
   font-size: var(--text-lg);
 }
 
+.dialog-header h2:focus {
+  outline: none;
+}
+
+.dialog-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-1) var(--space-4) var(--space-6);
+}
+
+/* Save / Cancel: always on screen, above the home indicator */
+.dialog-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-up);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dialog-actions button {
+  flex: 1;
+  min-height: var(--tap);
+}
+
+/* Fields: a visible label above every control */
+
 .dialog-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   border: none;
@@ -80,15 +155,198 @@
 .dialog-field .field-label {
   margin: 0;
   padding: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.dialog-field input:where(:not([type='checkbox'], [type='radio'], [type='file'])),
+.dialog-field select,
+.dialog-field textarea {
+  width: 100%;
+  min-height: var(--tap);
 }
 
 .dialog-section {
-  margin: 4px 0 0;
-  padding-top: 12px;
+  margin: 0;
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border-subtle);
   font-size: var(--text-xs);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
+}
+
+/* Quiet text actions (Remove, Delete item): clearly buttons, but they
+   don't compete with Save. */
+.quiet-button {
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.quiet-button:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.quiet-button.danger {
+  color: var(--danger);
+}
+
+.add-row-button {
+  min-height: var(--tap);
+  background: none;
+  color: var(--accent-text);
+  border: 1px dashed var(--accent-border);
+  font-size: var(--text-sm);
+}
+
+/* A problem worth reading, but not a failed field (e.g. a feature the
+   database isn't set up for yet) */
+.dialog-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+/* Destructive actions sit at the very end, apart from everything else */
+.dialog-danger-zone {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Store chips ("Available at"): the same pill look as the store filter,
+   tap-sized, with a tick so "selected" doesn't rely on colour alone */
+
+.store-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.store-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+.store-chip.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.store-chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.store-chip-check {
+  display: none;
+}
+
+.store-chip.checked .store-chip-check {
+  display: block;
+  width: 10px;
+  height: 5px;
+  margin: -3px 1px 0 -2px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.store-chips .add-store-button {
+  min-height: var(--tap);
+}
+
+.store-chips .add-store-inline input,
+.store-chips .add-store-inline button {
+  min-height: var(--tap);
+}
+
+.store-chips .add-store-inline input {
+  width: 150px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-chip {
+    transition: none;
+  }
+}
+
+/* Brands in the item editor: one card per brand */
+
+.brand-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brand-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
+}
+
+.brand-card > input {
+  width: 100%;
+  min-height: var(--tap);
+}
+
+.brand-card .photo-picker {
+  margin: 0;
+}
+
+.brand-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+}
+
+.preferred-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.preferred-toggle input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
 }
 
 /* Photo picker */
@@ -96,9 +354,9 @@
 .photo-picker {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  margin: 6px 0;
+  margin: 0;
 }
 
 .photo-thumb {
@@ -109,12 +367,203 @@
   border: 1px solid var(--border);
 }
 
-.photo-picker button {
-  padding: 6px 12px;
+.photo-picker .secondary-button {
+  min-height: var(--tap);
+  padding: 0 14px;
   font-size: var(--text-sm);
 }
 
 .photo-error {
   flex-basis: 100%;
   margin: 0;
+}
+
+/* Confirmation dialog (replaces window.confirm) */
+
+.confirm-dialog {
+  width: calc(100% - 48px);
+  max-width: 360px;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+
+.confirm-dialog::backdrop {
+  background: var(--backdrop);
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.confirm-dialog-actions button {
+  flex: 1;
+  min-height: var(--tap);
+}
+
+.confirm-dialog .confirm-danger {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+/* "⋮" action menu */
+
+.action-menu {
+  position: relative;
+  flex: none;
+}
+
+.action-menu-button {
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.action-menu-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 0;
+  z-index: 5;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.action-menu-list.up {
+  top: auto;
+  bottom: calc(100% + 2px);
+}
+
+.action-menu-list button {
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  background: none;
+  color: var(--text);
+  text-align: left;
+  border-radius: var(--radius-sm);
+}
+
+.action-menu-list button:hover,
+.action-menu-list button:focus-visible {
+  background: var(--surface-sunken);
+}
+
+.action-menu-list .action-menu-danger {
+  color: var(--danger);
+}
+
+/* List row panel: the item's facts, then its actions */
+
+.item-facts {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.item-facts-photo {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.item-facts dl {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--space-3);
+  margin: 0;
+}
+
+/* each <div> just groups a dt with its dd for the grid */
+.item-facts dl > div {
+  display: contents;
+}
+
+.item-facts dt {
+  padding-top: 1px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.item-facts dd {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.item-facts-brand {
+  font-weight: 600;
+}
+
+.item-facts-also {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.entry-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.entry-panel-actions button {
+  flex: 1 1 auto;
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* Inline quantity / note / who form in the list row panel */
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-lg);
+}
+
+.entry-form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-2);
+}
+
+.entry-form-note,
+.entry-form-fields:not(:has(.entry-form-member)) .entry-form-quantity {
+  grid-column: 1 / -1;
 }

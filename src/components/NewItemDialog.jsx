@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
-import AddStoreInline from './AddStoreInline'
+import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import { categoryOptions, findCategory } from '../utils/items'
 import { similarItems } from '../utils/search'
@@ -44,12 +44,6 @@ export default function NewItemDialog({
   const newCategory = !!category.trim() && !findCategory(categories, category)
   const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving && !photoBusy
 
-  function toggleStore(storeId) {
-    setSelectedStores((prev) =>
-      prev.includes(storeId) ? prev.filter((s) => s !== storeId) : [...prev, storeId],
-    )
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     if (!canSave) return
@@ -76,7 +70,7 @@ export default function NewItemDialog({
       aria-labelledby="item-dialog-title"
       onCancel={(e) => {
         e.preventDefault()
-        if (!saving) onClose()
+        if (e.target === dialogRef.current && !saving) onClose()
       }}
       onClick={(e) => {
         // a click on the backdrop lands on the <dialog> itself
@@ -84,94 +78,88 @@ export default function NewItemDialog({
       }}
     >
       <form className="item-dialog-form" onSubmit={handleSubmit}>
-        <h2 id="item-dialog-title">
-          {existing ? `Where can you get ${existing.name}?` : 'New item'}
-        </h2>
+        <div className="dialog-header">
+          <h2 id="item-dialog-title">
+            {existing ? `Where can you get ${existing.name}?` : 'New item'}
+          </h2>
+        </div>
 
-        {!existing && (
-          <label className="dialog-field">
-            <span className="field-label">Name</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} />
-            {duplicate && <span className="field-hint">That item already exists.</span>}
-            {similar.length > 0 && (
-              <span className="field-note">
-                Similar to {similar.map((i) => i.name).join(', ')}, already in the catalog.
-              </span>
-            )}
-          </label>
-        )}
+        <div className="dialog-body">
+          {!existing && (
+            <label className="dialog-field">
+              <span className="field-label">Name</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} />
+              {duplicate && <span className="field-hint">That item already exists.</span>}
+              {similar.length > 0 && (
+                <span className="field-note">
+                  Similar to {similar.map((i) => i.name).join(', ')}, already in the catalog.
+                </span>
+              )}
+            </label>
+          )}
 
-        <fieldset className="dialog-field">
-          <legend className="field-label">Available at (pick at least one)</legend>
-          <div className="store-checkboxes">
-            {stores.map((store) => (
-              <label key={store.id} className="store-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedStores.includes(store.id)}
-                  onChange={() => toggleStore(store.id)}
+          <StoreChips
+            stores={stores}
+            value={selectedStores}
+            onChange={setSelectedStores}
+            onStoreAdded={onStoreAdded}
+          >
+            {!stores.length && <span className="field-hint">No stores exist yet.</span>}
+          </StoreChips>
+
+          {!existing && (
+            <>
+              <p className="dialog-section">Optional</p>
+              <label className="dialog-field">
+                <span className="field-label">Category</span>
+                <Autocomplete
+                  options={categoryOptions(categories)}
+                  value={category}
+                  onChange={setCategory}
+                  placeholder="e.g. produce, dairy"
                 />
-                {store.name}
+                {newCategory && <span className="field-note">New category</span>}
               </label>
-            ))}
-            <AddStoreInline
-              stores={stores}
-              onAdded={async (store) => {
-                await onStoreAdded?.()
-                setSelectedStores((prev) => [...prev, store.id])
-              }}
-            />
+              <label className="dialog-field">
+                <span className="field-label">Preferred brand</span>
+                <input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
+              </label>
+              <div className="dialog-field">
+                <span className="field-label">Photo</span>
+                <PhotoPicker
+                  imageUrl={imageUrl}
+                  onChange={setImageUrl}
+                  onBusyChange={setPhotoBusy}
+                  addLabel="Add a photo"
+                  removable
+                />
+              </div>
+              <label className="dialog-field">
+                <span className="field-label">How to pick a good one</span>
+                <textarea
+                  placeholder="e.g. firm, deep green, slight give at the stem"
+                  value={selectionCriteria}
+                  onChange={(e) => setSelectionCriteria(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+        </div>
+
+        <div className="dialog-footer">
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="dialog-actions">
+            <button type="submit" disabled={!canSave}>
+              {saving ? 'Saving…' : submitLabel}
+            </button>
+            <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
+              Cancel
+            </button>
           </div>
-          {!stores.length && <span className="field-hint">No stores exist yet.</span>}
-        </fieldset>
-
-        {!existing && (
-          <>
-            <p className="dialog-section">Optional</p>
-            <label className="dialog-field">
-              <span className="field-label">Category</span>
-              <Autocomplete
-                options={categoryOptions(categories)}
-                value={category}
-                onChange={setCategory}
-                placeholder="e.g. produce, dairy"
-              />
-              {newCategory && <span className="field-note">New category</span>}
-            </label>
-            <label className="dialog-field">
-              <span className="field-label">Preferred brand</span>
-              <input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
-            </label>
-            <div className="dialog-field">
-              <span className="field-label">Photo</span>
-              <PhotoPicker
-                imageUrl={imageUrl}
-                onChange={setImageUrl}
-                onBusyChange={setPhotoBusy}
-                addLabel="Add a photo"
-                removable
-              />
-            </div>
-            <label className="dialog-field">
-              <span className="field-label">How to pick a good one</span>
-              <textarea
-                placeholder="e.g. firm, deep green, slight give at the stem"
-                value={selectionCriteria}
-                onChange={(e) => setSelectionCriteria(e.target.value)}
-              />
-            </label>
-          </>
-        )}
-
-        {error && <p className="field-hint">{error}</p>}
-
-        <div className="form-actions">
-          <button type="submit" disabled={!canSave}>
-            {saving ? 'Saving…' : submitLabel}
-          </button>
-          <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
         </div>
       </form>
     </dialog>

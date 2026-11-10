@@ -30,6 +30,7 @@
 
   /* status */
   --danger: #a33;
+  --on-danger: #fff; /* text on a --danger fill */
   --warning-text: #7a4a14;
   --warning-bg: #fbefe3;
 
@@ -100,6 +101,7 @@
     --accent-ring: #4d7a60;
 
     --danger: #e58080;
+    --on-danger: #151614;
     --warning-text: #e5b77e;
     --warning-bg: #3a2c1a;
 
