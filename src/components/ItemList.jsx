@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ItemDetail from './ItemDetail'
-import EntryEditForm from './EntryEditForm'
+import EntryEditDialog from './EntryEditDialog'
 import ItemEditDialog from './ItemEditDialog'
 import { formatRelativeTime } from '../utils/time'
 import ListEmptyState from './ListEmptyState'
@@ -196,40 +196,39 @@ export default function ItemList({
                 {isExpanded && (
                   <div className="list-row-panel">
                     {item && <ItemDetail item={item} brands={itemBrands} />}
-                    {editing === 'entry' ? (
-                      <EntryEditForm
+                    <div className="entry-panel-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setEditing('entry')}
+                      >
+                        Edit quantity &amp; note
+                      </button>
+                      {item && (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => setEditing('item')}
+                        >
+                          Edit item details
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => onDelete(entry, item)}
+                      >
+                        Remove from list
+                      </button>
+                    </div>
+                    {editing === 'entry' && (
+                      <EntryEditDialog
                         entry={entry}
                         itemName={item?.name}
                         members={members}
                         onSaved={finishEditing}
-                        onCancel={() => setEditing(null)}
+                        onClose={() => setEditing(null)}
                       />
-                    ) : (
-                      <div className="entry-panel-actions">
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => setEditing('entry')}
-                        >
-                          Edit quantity &amp; note
-                        </button>
-                        {item && (
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() => setEditing('item')}
-                          >
-                            Edit item details
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="danger-button"
-                          onClick={() => onDelete(entry, item)}
-                        >
-                          Remove from list
-                        </button>
-                      </div>
                     )}
                     {editing === 'item' && item && (
                       <ItemEditDialog

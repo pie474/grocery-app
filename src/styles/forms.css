@@ -532,16 +532,7 @@
   font-size: var(--text-sm);
 }
 
-/* Inline quantity / note / who form in the list row panel */
-
-.entry-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--surface-sunken);
-  border-radius: var(--radius-lg);
-}
+/* Quantity / note / who fields in the list entry dialog */
 
 .entry-form-fields {
   display: grid;
