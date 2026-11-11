@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { uploadPhoto } from '../utils/photos'
+import PhotoThumb from './PhotoThumb'
 
 // Take or choose a photo (phones offer both for accept="image/*"), upload
 // it, and hand the public URL to onChange. onChange('') means removed.
@@ -37,7 +38,7 @@ export default function PhotoPicker({
 
   return (
     <div className="photo-picker">
-      {imageUrl && <img className="photo-thumb" src={imageUrl} alt="" />}
+      {imageUrl && <PhotoThumb className="photo-thumb" src={imageUrl} />}
       <button
         type="button"
         className="secondary-button"

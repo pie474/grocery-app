@@ -1,4 +1,5 @@
 import { formatRelativeTime } from '../utils/time'
+import PhotoThumb from './PhotoThumb'
 
 // What the household knows about an item, as labelled facts: brand (with
 // its photo), how to pick a good one, and when it was last bought. Shows
@@ -11,7 +12,12 @@ export default function ItemDetail({ item, brands }) {
   return (
     <div className="item-facts">
       {preferred?.image_url && (
-        <img className="item-facts-photo" src={preferred.image_url} alt={preferred.brand_name} />
+        <PhotoThumb
+          className="item-facts-photo"
+          src={preferred.image_url}
+          alt={preferred.brand_name}
+          caption={preferred.brand_name}
+        />
       )}
       <dl>
         {preferred && (
