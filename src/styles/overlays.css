@@ -103,6 +103,18 @@
   color: var(--toast-text);
 }
 
+/* While any dialog is open (a sheet, a confirmation, an enlarged photo)
+   the page behind it must not scroll. A modal <dialog> blocks taps on
+   the page but not scrolling, least of all on iOS. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* scrolling to the end of a sheet doesn't carry on into the page */
+dialog {
+  overscroll-behavior: contain;
+}
+
 /* Enlarged photo (PhotoThumb) */
 
 .photo-thumb-button {
@@ -133,6 +145,8 @@
   background: var(--lightbox-backdrop);
   color: var(--lightbox-text);
   cursor: zoom-out;
+  /* nothing in here scrolls, so a drag shouldn't move anything */
+  touch-action: none;
 }
 
 .photo-lightbox[open] {
