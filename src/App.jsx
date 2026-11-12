@@ -7,7 +7,19 @@ import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
 import MemberPicker from './components/MemberPicker'
-import { getDeviceMemberId, setDeviceMemberId } from './utils/members'
+import MemberPrompt from './components/MemberPrompt'
+import AppHeader from './components/AppHeader'
+import BottomNav from './components/BottomNav'
+import ListSkeleton from './components/ListSkeleton'
+import {
+  getDeviceMemberId,
+  setDeviceMemberId,
+  getMemberPromptDismissed,
+  setMemberPromptDismissed,
+} from './utils/members'
+
+// header title for each view
+const VIEW_TITLES = { list: 'Grocery List', bought: 'Bought', catalog: 'Catalog' }
 
 // list_entries fields for an entry that's back on the list
 const NEEDED = { status: 'needed', bought_at: null, bought_by: null }
@@ -25,10 +37,13 @@ export default function App() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
-  const [toast, setToast] = useState(null) // { message, undo }
+  // "Not now" on the first-run "who's using this phone?" card
+  const [memberPromptDismissed, setMemberPromptDismissedState] = useState(getMemberPromptDismissed)
+  const [toast, setToast] = useState(null) // { id, message, undo, error }
   // who's using this phone: recorded as who added or bought things here
   const [deviceMemberId, setDeviceMemberIdState] = useState(getDeviceMemberId)
   const toastTimeoutRef = useRef(null)
+  const toastIdRef = useRef(0)
 
   const loadAll = useCallback(async () => {
     const results = await Promise.all([
@@ -120,14 +135,30 @@ export default function App() {
     setDeviceMemberId(memberId)
   }
 
+  function dismissMemberPrompt() {
+    setMemberPromptDismissedState(true)
+    setMemberPromptDismissed()
+  }
+
+  // each tab starts at the top, not at the last tab's scroll position
+  function changeView(next) {
+    if (next === view) return
+    setView(next)
+    window.scrollTo(0, 0)
+  }
+
   // ignores a remembered member who has since been removed
   const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
+  const showMemberPrompt = members.length > 0 && !currentMemberId && !memberPromptDismissed
 
   // undo: a function for an Undo button, or null for a plain message.
+  // A new toast replaces the current one and restarts its timer; errors
+  // stay up longer so there's time to read them.
   function showToast(message, undo, { error = false } = {}) {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    setToast({ message, undo, error })
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 6000)
+    toastIdRef.current += 1
+    setToast({ id: toastIdRef.current, message, undo, error })
+    toastTimeoutRef.current = setTimeout(() => setToast(null), error ? 8000 : 6000)
   }
 
   function showError(message) {
@@ -259,55 +290,102 @@ export default function App() {
     })
   }
 
-  function countLabel(count) {
-    return count === 1 ? 'this purchase record' : `these ${count} purchase records`
+  // What a Bought-tab action applied to, for its toast: the item's name
+  // for one entry, otherwise a count.
+  function countLabel(selected, noun) {
+    if (selected.length === 1) {
+      const item = items.find((i) => i.id === selected[0].item_id)
+      return `"${item?.name || 'item'}"`
+    }
+    return `${selected.length} ${noun}`
   }
 
   // The Bought tab's actions take a list of entries so a single row and a
-  // multi-select batch share one path. Each updates the screen right
-  // away and returns false only if the user backed out at the confirm.
+  // multi-select batch share one path. Both update the screen right away
+  // and offer Undo rather than asking first, so they always go ahead and
+  // return true (BoughtView leaves select mode on true).
   function handleMoveBack(selected) {
     const ids = selected.map((e) => e.id)
     setEntries((prev) =>
       prev.map((e) => (ids.includes(e.id) ? { ...e, ...NEEDED } : e)),
     )
-    saveInBackground(
+    const saved = saveInBackground(
       () => supabase.from('list_entries').update(NEEDED).in('id', ids),
       selected,
       selected.length === 1
         ? "Couldn't move it back to the list. Check your connection and try again."
         : "Couldn't move them back to the list. Check your connection and try again.",
     )
+
+    showToast(`Moved ${countLabel(selected, 'items')} back to the list`, async () => {
+      if (!(await saved)) return
+      selected.forEach(restoreEntry)
+      // each entry has its own bought_at, so they're saved one by one
+      const results = await Promise.all(
+        selected.map((e) =>
+          supabase
+            .from('list_entries')
+            .update({ status: e.status, bought_at: e.bought_at, bought_by: e.bought_by })
+            .eq('id', e.id),
+        ),
+      )
+      const failed = selected.filter((e, i) => results[i].error)
+      if (failed.length) {
+        console.error(results.find((r) => r.error).error)
+        failed.forEach((e) => patchEntry(e.id, NEEDED))
+        showError(
+          failed.length === 1
+            ? "Couldn't undo. It's still back on the list."
+            : `Couldn't undo ${failed.length} of them. They're still back on the list.`,
+        )
+      }
+      await recomputeLastBoughtFor(selected)
+    })
     return true
   }
 
   function handleDeleteForever(selected) {
-    const item = selected.length === 1 && items.find((i) => i.id === selected[0].item_id)
-    const confirmed = confirm(
-      `Permanently delete ${countLabel(selected.length)}${item ? ` for "${item.name}"` : ''}? This can't be undone.`,
-    )
-    if (!confirmed) return false
     const ids = selected.map((e) => e.id)
     setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
-    saveInBackground(
+    const deleted = saveInBackground(
       () => supabase.from('list_entries').delete().in('id', ids),
       selected,
       "Couldn't delete. Check your connection and try again.",
     )
+
+    showToast(`Deleted ${countLabel(selected, 'purchase records')}`, async () => {
+      if (!(await deleted)) return
+      selected.forEach(restoreEntry)
+      // same ids and timestamps, so they come back exactly as they were
+      const { error } = await supabase.from('list_entries').insert(selected)
+      if (error) {
+        console.error(error)
+        setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
+        showError("Couldn't undo. Still deleted.")
+        return
+      }
+      await recomputeLastBoughtFor(selected)
+    })
     return true
   }
 
+  function recomputeLastBoughtFor(affected) {
+    return Promise.all([...new Set(affected.map((e) => e.item_id))].map(recomputeLastBought))
+  }
+
   // Runs a save after the screen has already been updated; on failure
-  // puts the entries back as they were and says so.
+  // puts the entries back as they were and says so. Resolves to whether
+  // it worked, so Undo can wait for it instead of racing it.
   async function saveInBackground(save, originals, errorMessage) {
     const { error } = await save()
     if (error) {
       console.error(error)
       originals.forEach(restoreEntry)
       showError(errorMessage)
-      return
+      return false
     }
-    await Promise.all([...new Set(originals.map((e) => e.item_id))].map(recomputeLastBought))
+    await recomputeLastBoughtFor(originals)
+    return true
   }
 
   function retryLoad() {
@@ -315,12 +393,24 @@ export default function App() {
     loadAll()
   }
 
-  if (loading) return <p className="loading">Loading…</p>
+  if (loading) return <ListSkeleton />
 
   if (!hasLoaded) {
     return (
       <div className="load-error" role="alert">
-        <p>Couldn't load the list. Check your connection.</p>
+        <span className="load-error-icon" aria-hidden="true">
+          {/* cloud with a line through it */}
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 18h10.5a3.5 3.5 0 0 0 .6-6.95A6 6 0 0 0 6.6 9.2 4.5 4.5 0 0 0 7 18z" />
+            <path d="M4 4l16 16" />
+          </svg>
+        </span>
+        <h1 className="load-error-title">Couldn't load your list</h1>
+        <p className="load-error-text">
+          Check that you're connected to the internet, then try again. Nothing you added
+          before has been lost.
+        </p>
         <button type="button" onClick={retryLoad}>
           Try again
         </button>
@@ -330,52 +420,46 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <div className="app-header-top">
-          <h1>Grocery List</h1>
-          {members.length > 0 && (
-            <MemberPicker
-              members={members}
-              memberId={currentMemberId}
-              onChange={handleDeviceMemberChange}
-            />
-          )}
-        </div>
-        <nav className="view-tabs">
-          <button
-            className={view === 'list' ? 'tab active' : 'tab'}
-            onClick={() => setView('list')}
-          >
-            List
-          </button>
-          <button
-            className={view === 'bought' ? 'tab active' : 'tab'}
-            onClick={() => setView('bought')}
-          >
-            Bought
-          </button>
-          <button
-            className={view === 'catalog' ? 'tab active' : 'tab'}
-            onClick={() => setView('catalog')}
-          >
-            Catalog
-          </button>
-        </nav>
-      </header>
+      <AppHeader title={VIEW_TITLES[view]}>
+        {/* while the first-run card is up it does the asking instead */}
+        {members.length > 0 && !showMemberPrompt && (
+          <MemberPicker
+            members={members}
+            memberId={currentMemberId}
+            onChange={handleDeviceMemberChange}
+          />
+        )}
+      </AppHeader>
 
       {loadError && (
-        <p className="sync-banner" role="alert">
-          Couldn't refresh the list. You may be offline.{' '}
-          <button type="button" className="link-button" onClick={loadAll}>
+        <div className="sync-banner" role="alert">
+          <svg className="sync-banner-icon" width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+            strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3.5l9.5 16.5h-19z" />
+            <path d="M12 10v4.5M12 17.5v.01" />
+          </svg>
+          <p className="sync-banner-text">Couldn't refresh. You may be offline; this list might be out of date.</p>
+          <button type="button" className="sync-banner-retry" onClick={loadAll}>
             Retry
           </button>
-        </p>
+        </div>
+      )}
+
+      {showMemberPrompt && (
+        <MemberPrompt
+          members={members}
+          onChoose={handleDeviceMemberChange}
+          onDismiss={dismissMemberPrompt}
+        />
       )}
 
       {view === 'list' && (
         <>
           <StoreFilter
             stores={stores}
+            entries={entries}
+            itemStores={itemStores}
             activeStoreId={activeStoreId}
             onChange={setActiveStoreId}
             onStoreAdded={loadAll}
@@ -401,6 +485,7 @@ export default function App() {
             stores={stores}
             members={members}
             activeStoreId={activeStoreId}
+            onClearStore={() => setActiveStoreId(null)}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
             onChanged={loadAll}
@@ -431,7 +516,14 @@ export default function App() {
         />
       )}
 
+      <BottomNav
+        view={view}
+        onChange={changeView}
+        neededCount={entries.filter((e) => e.status === 'needed').length}
+      />
+
       <UndoToast
+        id={toast?.id}
         message={toast?.message}
         error={toast?.error}
         onUndo={toast?.undo}

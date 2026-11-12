@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { searchByName } from '../utils/search'
 
 // Text input with a dropdown of matching options. Each option needs an `id`
@@ -12,21 +12,48 @@ export default function Autocomplete({
   ariaLabel,
   renderMeta,
 }) {
+  const listId = useId()
   const [isOpen, setIsOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
+  // the text the list was last closed for (a pick, Escape). It stays shut
+  // until the text changes, so it doesn't cover the fields below again.
+  const [dismissedFor, setDismissedFor] = useState(null)
 
   // spelling-tolerant: "jira" finds Jeera, "mung" finds Moong Dal
   const matches = value.trim() ? searchByName(options, value).slice(0, 8) : []
 
+  // once the text is exactly an option there's nothing left to pick
+  const typed = value.trim().toLowerCase()
+  const exactMatch = options.some((o) => o.name.toLowerCase() === typed)
+
+  const expanded =
+    isOpen && matches.length > 0 && !exactMatch && dismissedFor !== value
+  const optionId = (i) => `${listId}-option-${i}`
+
+  function close() {
+    setDismissedFor(value)
+    setHighlighted(-1)
+  }
+
   function selectOption(option) {
     onChange(option.name)
     onSelect?.(option)
-    setIsOpen(false)
+    setDismissedFor(option.name)
     setHighlighted(-1)
   }
 
   function handleKeyDown(e) {
-    if (!isOpen || !matches.length) return
+    if (!matches.length) return
+    if (!expanded) {
+      // ArrowDown brings a closed list back, as in native comboboxes
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setIsOpen(true)
+        setDismissedFor(null)
+        setHighlighted(0)
+      }
+      return
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setHighlighted((h) => (h + 1) % matches.length)
@@ -37,14 +64,18 @@ export default function Autocomplete({
       e.preventDefault()
       selectOption(matches[highlighted])
     } else if (e.key === 'Escape') {
-      setIsOpen(false)
-      setHighlighted(-1)
+      close()
     }
   }
 
   return (
     <div className="autocomplete">
       <input
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        aria-activedescendant={expanded && highlighted >= 0 ? optionId(highlighted) : undefined}
         placeholder={placeholder}
         aria-label={ariaLabel}
         value={value}
@@ -52,20 +83,24 @@ export default function Autocomplete({
         onChange={(e) => {
           onChange(e.target.value)
           setIsOpen(true)
+          setDismissedFor(null)
           setHighlighted(-1)
         }}
         onFocus={() => setIsOpen(true)}
-        // A short delay lets a click on an option register before the
-        // list unmounts; the option's onMouseDown below also blocks the
-        // blur that would otherwise beat the click.
-        onBlur={() => setIsOpen(false)}
+        // the options' onMouseDown below keeps this blur from beating a tap
+        onBlur={() => {
+          setIsOpen(false)
+          setHighlighted(-1)
+        }}
         onKeyDown={handleKeyDown}
       />
-      {isOpen && matches.length > 0 && (
-        <ul className="autocomplete-list" role="listbox">
-          {matches.map((option, i) => (
+      {/* always rendered so aria-controls points at something */}
+      <ul className="autocomplete-list" id={listId} role="listbox" hidden={!expanded}>
+        {expanded &&
+          matches.map((option, i) => (
             <li
               key={option.id}
+              id={optionId(i)}
               role="option"
               aria-selected={i === highlighted}
               className={i === highlighted ? 'autocomplete-option active' : 'autocomplete-option'}
@@ -78,8 +113,7 @@ export default function Autocomplete({
               {renderMeta && <span className="autocomplete-meta">{renderMeta(option)}</span>}
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
     </div>
   )
 }

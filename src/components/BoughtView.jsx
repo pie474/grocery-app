@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { dayKey, formatDayLabel, formatTimeOfDay } from '../utils/time'
+import EmptyState from './EmptyState'
 
 // Checkbox for a whole day: checked when all of its items are selected,
 // a dash (indeterminate) when only some are. Indeterminate can only be
@@ -144,12 +145,18 @@ export default function BoughtView({ entries, items, members = [], onMoveBack, o
 
   function runBatch(action) {
     if (!selected.length) return
-    // stay in select mode if the user cancels the delete confirm
+    // an action returns false if it did not go ahead; stay in select mode then
     if (action(selected)) exitSelecting()
   }
 
   if (!bought.length) {
-    return <p className="empty-state">Nothing bought yet.</p>
+    return (
+      <EmptyState
+        icon="bought"
+        title="Nothing bought yet"
+        hint="Things you check off the list show up here, so you can see what was bought and when."
+      />
+    )
   }
 
   return (

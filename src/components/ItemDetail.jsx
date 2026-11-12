@@ -1,42 +1,51 @@
 import { formatRelativeTime } from '../utils/time'
+import PhotoThumb from './PhotoThumb'
 
+// What the household knows about an item, as labelled facts: brand (with
+// its photo), how to pick a good one, and when it was last bought. Shows
+// nothing when there's nothing to say.
 export default function ItemDetail({ item, brands }) {
   const preferred = brands.find((b) => b.is_preferred) || brands[0]
+  const otherBrands = brands.filter((b) => b !== preferred)
   if (!preferred && !item.selection_criteria && !item.last_bought_at) return null
 
   return (
-    <div className="item-detail">
+    <div className="item-facts">
       {preferred?.image_url && (
-        <img
-          className="brand-image"
+        <PhotoThumb
+          className="item-facts-photo"
           src={preferred.image_url}
           alt={preferred.brand_name}
+          caption={preferred.brand_name}
         />
       )}
-      {preferred && (
-        <p className="brand-name">Preferred: {preferred.brand_name}</p>
-      )}
-      {item.selection_criteria && (
-        <p className="selection-criteria">
-          <strong>How to pick:</strong> {item.selection_criteria}
-        </p>
-      )}
-      {item.last_bought_at && (
-        <p className="last-bought">
-          Last bought {formatRelativeTime(item.last_bought_at)}
-        </p>
-      )}
-      {brands.length > 1 && (
-        <div className="other-brands">
-          {brands
-            .filter((b) => b !== preferred)
-            .map((b) => (
-              <span key={b.id} className="brand-chip">
-                {b.brand_name}
-              </span>
-            ))}
-        </div>
-      )}
+      <dl>
+        {preferred && (
+          <div>
+            <dt>{otherBrands.length ? 'Preferred brand' : 'Brand'}</dt>
+            <dd>
+              <span className="item-facts-brand">{preferred.brand_name}</span>
+              {otherBrands.length > 0 && (
+                <span className="item-facts-also">
+                  Also: {otherBrands.map((b) => b.brand_name).join(', ')}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
+        {item.selection_criteria && (
+          <div>
+            <dt>How to pick</dt>
+            <dd>{item.selection_criteria}</dd>
+          </div>
+        )}
+        {item.last_bought_at && (
+          <div>
+            <dt>Last bought</dt>
+            <dd>{formatRelativeTime(item.last_bought_at)}</dd>
+          </div>
+        )}
+      </dl>
     </div>
   )
 }

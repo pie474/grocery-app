@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
-import AddStoreInline from './AddStoreInline'
+import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
+import ConfirmDialog from './ConfirmDialog'
 import { categoryOptions, findCategory, resolveCategory } from '../utils/items'
 
 function makeBrandRow(brand) {
@@ -16,7 +17,11 @@ function makeBrandRow(brand) {
 }
 
 // Edits an existing catalog item. New items are created in NewItemDialog.
+// Rendered inside ItemEditDialog: a heading, a scrolling body, and a
+// footer with Save / Cancel that stays in reach. Deleting the item lives
+// at the very bottom of the body, well away from Save.
 export default function ItemEditForm({
+  titleId,
   item,
   categories,
   storeIds,
@@ -25,7 +30,9 @@ export default function ItemEditForm({
   onSaved,
   onCancel,
   onStoreAdded,
+  onBusyChange,
 }) {
+  const fieldId = useId()
   const [name, setName] = useState(item.name || '')
   const [category, setCategory] = useState(
     () => categories.find((c) => c.id === item.category_id)?.name || '',
@@ -38,29 +45,22 @@ export default function ItemEditForm({
   const [saving, setSaving] = useState(false)
   const [uploadsInFlight, setUploadsInFlight] = useState(0)
   const [error, setError] = useState(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  function toggleStore(storeId) {
-    setSelectedStores((prev) =>
-      prev.includes(storeId) ? prev.filter((s) => s !== storeId) : [...prev, storeId],
-    )
-  }
+  // the dialog around this form ignores Escape and backdrop taps mid-save
+  useEffect(() => {
+    onBusyChange?.(saving)
+  }, [saving, onBusyChange])
 
   function updateBrandRow(key, field, value) {
     setBrandRows((rows) =>
       rows.map((r) => {
-        if (r.key !== key) return r
+        if (r.key === key) return { ...r, [field]: value }
         // only one preferred brand at a time
-        if (field === 'is_preferred' && value === true) {
-          return { ...r, is_preferred: true }
-        }
-        return { ...r, [field]: value }
+        if (field === 'is_preferred' && value === true) return { ...r, is_preferred: false }
+        return r
       }),
     )
-    if (field === 'is_preferred' && value === true) {
-      setBrandRows((rows) =>
-        rows.map((r) => (r.key === key ? r : { ...r, is_preferred: false })),
-      )
-    }
   }
 
   function addBrandRow() {
@@ -72,13 +72,11 @@ export default function ItemEditForm({
   }
 
   async function handleDeleteItem() {
-    if (!confirm(`Delete "${item.name}" from the catalog? This also removes it from any current list.`)) {
-      return
-    }
     setSaving(true)
     setError(null)
     const { error: deleteError } = await supabase.from('items').delete().eq('id', item.id)
     setSaving(false)
+    setConfirmingDelete(false)
     if (deleteError) {
       console.error(deleteError)
       setError("Couldn't delete the item. Check your connection and try again.")
@@ -167,105 +165,139 @@ export default function ItemEditForm({
   }
 
   return (
-    <form className="item-edit-form" onSubmit={handleSubmit}>
-      <input
-        placeholder="Item name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <Autocomplete
-        options={categoryOptions(categories)}
-        value={category}
-        onChange={setCategory}
-        placeholder="Category (e.g. produce, dairy)"
-      />
-      {newCategory && <p className="field-note">New category</p>}
-      <textarea
-        placeholder="How to pick a good one (e.g. firm, deep green, slight give at the stem)"
-        value={selectionCriteria}
-        onChange={(e) => setSelectionCriteria(e.target.value)}
-      />
-
-      <p className="field-label">Available at (pick at least one)</p>
-      <div className="store-checkboxes">
-        {stores.map((store) => (
-          <label key={store.id} className="store-checkbox">
-            <input
-              type="checkbox"
-              checked={selectedStores.includes(store.id)}
-              onChange={() => toggleStore(store.id)}
-            />
-            {store.name}
-          </label>
-        ))}
-        <AddStoreInline
-          stores={stores}
-          onAdded={async (store) => {
-            await onStoreAdded?.()
-            setSelectedStores((prev) => [...prev, store.id])
-          }}
-        />
+    <form className="item-dialog-form" onSubmit={handleSubmit}>
+      <div className="dialog-header">
+        {/* focused on open instead of the first field, so the keyboard
+            doesn't cover the form before anyone has chosen what to edit */}
+        <h2 id={titleId} tabIndex={-1}>
+          Edit item
+        </h2>
       </div>
 
-      {missingStores && <p className="field-hint">Pick at least one store to save.</p>}
+      <div className="dialog-body">
+        <label className="dialog-field">
+          <span className="field-label">Name</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} />
+          {!name.trim() && <span className="field-hint">Give the item a name to save.</span>}
+        </label>
 
-      <p className="field-label">Brands</p>
-      {brandRows.map((row) => (
-        <div key={row.key} className="brand-row">
-          <input
-            placeholder="Brand name"
-            value={row.brand_name}
-            onChange={(e) => updateBrandRow(row.key, 'brand_name', e.target.value)}
+        <label className="dialog-field">
+          <span className="field-label">Category</span>
+          <Autocomplete
+            options={categoryOptions(categories)}
+            value={category}
+            onChange={setCategory}
+            placeholder="e.g. produce, dairy"
           />
-          <PhotoPicker
-            imageUrl={row.image_url}
-            onChange={(url) => updateBrandRow(row.key, 'image_url', url)}
-            onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
-            removable
+          {newCategory && <span className="field-note">New category</span>}
+        </label>
+
+        <StoreChips
+          stores={stores}
+          value={selectedStores}
+          onChange={setSelectedStores}
+          onStoreAdded={onStoreAdded}
+        >
+          {missingStores && <span className="field-hint">Pick at least one store to save.</span>}
+        </StoreChips>
+
+        <label className="dialog-field">
+          <span className="field-label">How to pick a good one</span>
+          <textarea
+            placeholder="e.g. firm, deep green, slight give at the stem"
+            value={selectionCriteria}
+            onChange={(e) => setSelectionCriteria(e.target.value)}
           />
-          <label className="preferred-toggle">
-            <input
-              type="radio"
-              name="preferred-brand"
-              checked={row.is_preferred}
-              onChange={() => updateBrandRow(row.key, 'is_preferred', true)}
-            />
-            Preferred
-          </label>
+        </label>
+
+        <fieldset className="dialog-field">
+          <legend className="field-label">Brands</legend>
+          {brandRows.length > 0 && (
+            <ul className="brand-cards">
+              {brandRows.map((row, index) => (
+                <li key={row.key} className="brand-card">
+                  <input
+                    aria-label={`Brand ${index + 1} name`}
+                    placeholder="Brand name"
+                    value={row.brand_name}
+                    onChange={(e) => updateBrandRow(row.key, 'brand_name', e.target.value)}
+                  />
+                  <PhotoPicker
+                    imageUrl={row.image_url}
+                    onChange={(url) => updateBrandRow(row.key, 'image_url', url)}
+                    onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
+                    removable
+                  />
+                  <div className="brand-card-footer">
+                    <label className="preferred-toggle">
+                      <input
+                        type="radio"
+                        name={`${fieldId}-preferred`}
+                        checked={row.is_preferred}
+                        onChange={() => updateBrandRow(row.key, 'is_preferred', true)}
+                      />
+                      Preferred
+                    </label>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      aria-label={`Remove brand ${row.brand_name.trim() || index + 1}`}
+                      onClick={() => removeBrandRow(row.key)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button type="button" className="add-row-button" onClick={addBrandRow}>
+            + Add a brand
+          </button>
+        </fieldset>
+
+        <div className="dialog-danger-zone">
           <button
             type="button"
-            className="icon-button"
-            onClick={() => removeBrandRow(row.key)}
+            className="quiet-button danger"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={saving}
           >
-            Remove
+            Delete item from catalog
           </button>
         </div>
-      ))}
-      <button type="button" className="link-button" onClick={addBrandRow}>
-        + Add another brand
-      </button>
-
-      {error && <p className="form-error">{error}</p>}
-
-      <div className="form-actions">
-        <button
-          type="submit"
-          disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
-        >
-          Save changes
-        </button>
-        <button type="button" className="secondary-button" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="danger-button"
-          onClick={handleDeleteItem}
-          disabled={saving}
-        >
-          Delete item
-        </button>
       </div>
+
+      <div className="dialog-footer">
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="dialog-actions">
+          <button
+            type="submit"
+            disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
+          >
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+          <button type="button" className="secondary-button" onClick={onCancel} disabled={saving}>
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={`Delete "${item.name}"?`}
+          message="It's removed from the catalog and from the current list. This can't be undone."
+          confirmLabel="Delete item"
+          danger
+          busy={saving}
+          onConfirm={handleDeleteItem}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </form>
   )
 }
