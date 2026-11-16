@@ -194,7 +194,7 @@ export default function AddItemForm({
           <div className="add-item-extra-row">
             <input
               className="quantity-input"
-              placeholder="Qty (e.g. 2, 1 gal)"
+              placeholder="Qty (e.g. 2)"
               aria-label="Quantity"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}

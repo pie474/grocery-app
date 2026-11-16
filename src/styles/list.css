@@ -251,7 +251,7 @@
 }
 
 .quantity-input {
-  flex: 0 0 110px;
+  flex: 0 0 130px;
   /* an input's built-in width (about 20 characters at 16px) would
      otherwise win over the basis and push Note onto a line of its own */
   min-width: 0;
