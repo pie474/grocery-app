@@ -213,14 +213,16 @@ export default function ItemList({
                           Edit item details
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() => onDelete(entry, item)}
-                      >
-                        Remove from list
-                      </button>
                     </div>
+                    {/* quiet on purpose: it's undoable from the toast, and
+                        the edits above are what people usually came for */}
+                    <button
+                      type="button"
+                      className="quiet-button danger entry-remove-button"
+                      onClick={() => onDelete(entry, item)}
+                    >
+                      Remove from list
+                    </button>
                     {editing === 'entry' && (
                       <EntryEditDialog
                         entry={entry}

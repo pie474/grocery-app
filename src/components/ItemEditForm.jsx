@@ -1,9 +1,10 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useLayoutEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
 import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import ConfirmDialog from './ConfirmDialog'
+import { sortedIds, useIsDirty } from '../hooks/useDiscardGuard'
 import { categoryOptions, findCategory, resolveCategory } from '../utils/items'
 
 function makeBrandRow(brand) {
@@ -19,7 +20,9 @@ function makeBrandRow(brand) {
 // Edits an existing catalog item. New items are created in NewItemDialog.
 // Rendered inside ItemEditDialog: a heading, a scrolling body, and a
 // footer with Save / Cancel that stays in reach. Deleting the item lives
-// at the very bottom of the body, well away from Save.
+// at the very bottom of the body, well away from Save. onCancel is the
+// dialog's guarded close (it asks before throwing away changes);
+// onDirtyChange tells the dialog whether there are any.
 export default function ItemEditForm({
   titleId,
   item,
@@ -31,6 +34,7 @@ export default function ItemEditForm({
   onCancel,
   onStoreAdded,
   onBusyChange,
+  onDirtyChange,
 }) {
   const fieldId = useId()
   const [name, setName] = useState(item.name || '')
@@ -48,9 +52,28 @@ export default function ItemEditForm({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // the dialog around this form ignores Escape and backdrop taps mid-save
-  useEffect(() => {
+  useLayoutEffect(() => {
     onBusyChange?.(saving)
   }, [saving, onBusyChange])
+
+  // Only what would actually be saved: empty brand rows are dropped on
+  // save, so adding or removing a blank one isn't a change.
+  const dirty = useIsDirty({
+    name: name.trim(),
+    category: category.trim(),
+    selectionCriteria: selectionCriteria.trim(),
+    stores: sortedIds(selectedStores),
+    brands: brandRows
+      .filter((r) => r.brand_name.trim() || r.image_url)
+      .map((r) => [r.brand_name.trim(), r.image_url, r.is_preferred]),
+  })
+
+  // ...and asks before a backdrop tap, Escape or Cancel throws them away.
+  // Both are layout effects, so the dialog knows before the next key or tap
+  // (a passive effect can land after an Escape pressed right after a change).
+  useLayoutEffect(() => {
+    onDirtyChange?.(dirty)
+  }, [dirty, onDirtyChange])
 
   function updateBrandRow(key, field, value) {
     setBrandRows((rows) =>
@@ -86,6 +109,10 @@ export default function ItemEditForm({
   }
 
   const missingStores = selectedStores.length === 0
+  const uploading = uploadsInFlight > 0
+  // With a single brand the "Preferred" choice is noise: that brand is
+  // the preferred one. The radio only shows once there are two to pick from.
+  const choosePreferred = brandRows.length > 1
   const newCategory = !!category.trim() && !findCategory(categories, category)
 
   async function handleSubmit(e) {
@@ -138,14 +165,14 @@ export default function ItemEditForm({
       if (clearBrandsError) return clearBrandsError
       // a row with a photo but no brand name is saved under the item's own
       // name, the same as in NewItemDialog
-      const brandsToInsert = brandRows
-        .filter((r) => r.brand_name.trim() || r.image_url)
-        .map((r) => ({
-          item_id: itemId,
-          brand_name: r.brand_name.trim() || name.trim(),
-          image_url: r.image_url.trim() || null,
-          is_preferred: r.is_preferred,
-        }))
+      const brandsToSave = brandRows.filter((r) => r.brand_name.trim() || r.image_url)
+      const brandsToInsert = brandsToSave.map((r) => ({
+        item_id: itemId,
+        brand_name: r.brand_name.trim() || name.trim(),
+        image_url: r.image_url.trim() || null,
+        // a lone brand is the preferred one (no radio is shown for it)
+        is_preferred: brandsToSave.length === 1 || r.is_preferred,
+      }))
       if (brandsToInsert.length) {
         const { error: brandsError } = await supabase.from('item_brands').insert(brandsToInsert)
         if (brandsError) return brandsError
@@ -177,8 +204,17 @@ export default function ItemEditForm({
       <div className="dialog-body">
         <label className="dialog-field">
           <span className="field-label">Name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-          {!name.trim() && <span className="field-hint">Give the item a name to save.</span>}
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            aria-invalid={!name.trim() || undefined}
+            aria-describedby={!name.trim() ? `${fieldId}-name-hint` : undefined}
+          />
+          {!name.trim() && (
+            <span id={`${fieldId}-name-hint`} className="field-hint">
+              Give the item a name to save.
+            </span>
+          )}
         </label>
 
         <label className="dialog-field">
@@ -197,8 +233,13 @@ export default function ItemEditForm({
           value={selectedStores}
           onChange={setSelectedStores}
           onStoreAdded={onStoreAdded}
+          describedBy={missingStores ? `${fieldId}-stores-hint` : undefined}
         >
-          {missingStores && <span className="field-hint">Pick at least one store to save.</span>}
+          {missingStores && (
+            <span id={`${fieldId}-stores-hint`} className="field-hint">
+              Pick at least one store to save.
+            </span>
+          )}
         </StoreChips>
 
         <label className="dialog-field">
@@ -229,15 +270,17 @@ export default function ItemEditForm({
                     removable
                   />
                   <div className="brand-card-footer">
-                    <label className="preferred-toggle">
-                      <input
-                        type="radio"
-                        name={`${fieldId}-preferred`}
-                        checked={row.is_preferred}
-                        onChange={() => updateBrandRow(row.key, 'is_preferred', true)}
-                      />
-                      Preferred
-                    </label>
+                    {choosePreferred && (
+                      <label className="preferred-toggle">
+                        <input
+                          type="radio"
+                          name={`${fieldId}-preferred`}
+                          checked={row.is_preferred}
+                          onChange={() => updateBrandRow(row.key, 'is_preferred', true)}
+                        />
+                        Preferred
+                      </label>
+                    )}
                     <button
                       type="button"
                       className="quiet-button"
@@ -275,11 +318,9 @@ export default function ItemEditForm({
           </p>
         )}
         <div className="dialog-actions">
-          <button
-            type="submit"
-            disabled={saving || uploadsInFlight > 0 || !name.trim() || missingStores}
-          >
-            {saving ? 'Saving…' : 'Save changes'}
+          <button type="submit" disabled={saving || uploading || !name.trim() || missingStores}>
+            {/* the photo is what's holding Save up, so say so where people look */}
+            {uploading ? 'Uploading photo…' : saving ? 'Saving…' : 'Save changes'}
           </button>
           <button type="button" className="secondary-button" onClick={onCancel} disabled={saving}>
             Cancel

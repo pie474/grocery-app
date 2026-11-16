@@ -111,6 +111,7 @@ create policy "household delete" on list_entries for delete using (true);
 
 create policy "household read" on stores for select using (true);
 create policy "household write" on stores for insert with check (true);
+create policy "household update" on stores for update using (true);
 create policy "household delete" on stores for delete using (true);
 
 create policy "household read" on item_stores for select using (true);

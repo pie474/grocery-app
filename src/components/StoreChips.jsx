@@ -3,13 +3,18 @@ import AddStoreInline from './AddStoreInline'
 // "Available at" picker: one toggleable chip per store. Each chip is a
 // real checkbox (visually hidden) inside its label, so it stays a
 // checkbox group for screen readers and keyboards while giving fingers a
-// full-size target. onChange gets the new array of store ids.
+// full-size target. onChange gets the new array of store ids. Hints go in
+// as children; pass their id as describedBy so the group is read out with
+// them.
 export default function StoreChips({
   stores,
   value,
   onChange,
   onStoreAdded,
-  legend = 'Available at (pick at least one)',
+  // what's required is said by the hint passed in as children, when it's
+  // missing, rather than in the legend every time
+  legend = 'Available at',
+  describedBy,
   children,
 }) {
   function toggle(storeId) {
@@ -17,7 +22,7 @@ export default function StoreChips({
   }
 
   return (
-    <fieldset className="dialog-field">
+    <fieldset className="dialog-field" aria-describedby={describedBy}>
       <legend className="field-label">{legend}</legend>
       <div className="store-chips">
         {stores.map((store) => {

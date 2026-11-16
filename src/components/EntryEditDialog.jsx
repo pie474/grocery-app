@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { useDiscardGuard, useIsDirty } from '../hooks/useDiscardGuard'
 
 // Modal (a bottom sheet on phones) for editing one list entry: how much,
 // a note, and who added it. onClose is for Escape, a backdrop tap or Cancel.
@@ -11,6 +12,8 @@ export default function EntryEditDialog({ entry, itemName, members = [], onSaved
   const [addedBy, setAddedBy] = useState(entry.added_by || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const dirty = useIsDirty({ quantity: quantity.trim(), note: note.trim(), addedBy })
+  const { requestClose, discardPrompt } = useDiscardGuard({ dirty, busy: saving, onClose })
 
   useEffect(() => {
     // focus goes to the quantity field (autoFocus), which is what people
@@ -46,11 +49,11 @@ export default function EntryEditDialog({ entry, itemName, members = [], onSaved
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault()
-        if (!saving) onClose()
+        if (e.target === dialogRef.current) requestClose()
       }}
       onClick={(e) => {
         // a click on the backdrop lands on the <dialog> itself
-        if (e.target === dialogRef.current && !saving) onClose()
+        if (e.target === dialogRef.current) requestClose()
       }}
     >
       <form className="item-dialog-form" onSubmit={handleSubmit}>
@@ -103,12 +106,13 @@ export default function EntryEditDialog({ entry, itemName, members = [], onSaved
             <button type="submit" disabled={saving}>
               {saving ? 'Saving…' : 'Save'}
             </button>
-            <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
+            <button type="button" className="secondary-button" onClick={requestClose} disabled={saving}>
               Cancel
             </button>
           </div>
         </div>
       </form>
+      {discardPrompt}
     </dialog>
   )
 }

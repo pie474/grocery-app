@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase, HOUSEHOLD_ID } from '../supabaseClient'
 import { sortCategories } from '../utils/items'
 import ActionMenu from './ActionMenu'
 import ConfirmDialog from './ConfirmDialog'
@@ -26,6 +26,7 @@ function ArrowIcon({ direction }) {
 // One category: read-only (name, item count, move buttons and a "⋮"
 // menu) until someone picks Rename or Merge into… from the menu.
 function CategoryRow({ category, others, count, index, total, onMove, onChanged }) {
+  const rowRef = useRef(null)
   const upRef = useRef(null)
   const downRef = useRef(null)
   const [mode, setMode] = useState('view') // 'view' | 'rename' | 'merge'
@@ -114,14 +115,25 @@ function CategoryRow({ category, others, count, index, total, onMove, onChanged 
     })
   }
 
+  // The menu item that had focus disappears with the menu, and the row
+  // itself jumps to the other end of the list; keep focus on its "⋮" so
+  // the next step (another move, or Done) is where it was.
+  function moveTo(target) {
+    onMove(category, target)
+    requestAnimationFrame(() => rowRef.current?.querySelector('.action-menu-button')?.focus())
+  }
+
   const menuItems = [
+    // big jumps, for a long list; the arrows are one step at a time
+    ...(index > 0 ? [{ label: 'Move to top', onSelect: () => moveTo(0) }] : []),
+    ...(index < total - 1 ? [{ label: 'Move to bottom', onSelect: () => moveTo(total - 1) }] : []),
     { label: 'Rename', onSelect: () => startEditing('rename') },
     ...(others.length ? [{ label: 'Merge into…', onSelect: () => startEditing('merge') }] : []),
     { label: 'Delete', danger: true, onSelect: () => setConfirming('delete') },
   ]
 
   return (
-    <li className="category-row">
+    <li className="category-row" ref={rowRef}>
       {mode === 'view' && (
         <div className="category-row-view">
           <span className="category-row-text">
@@ -137,7 +149,7 @@ function CategoryRow({ category, others, count, index, total, onMove, onChanged 
             onClick={() => {
               // this button is about to be disabled; keep focus in the row
               if (index === 1) downRef.current?.focus()
-              onMove(category, -1)
+              onMove(category, index - 1)
             }}
           >
             <ArrowIcon direction="up" />
@@ -150,7 +162,7 @@ function CategoryRow({ category, others, count, index, total, onMove, onChanged 
             disabled={index === total - 1}
             onClick={() => {
               if (index === total - 2) upRef.current?.focus()
-              onMove(category, 1)
+              onMove(category, index + 1)
             }}
           >
             <ArrowIcon direction="down" />
@@ -268,6 +280,111 @@ function CategoryRow({ category, others, count, index, total, onMove, onChanged 
   )
 }
 
+// "+ Add category": a button that opens an inline name field. New
+// categories have no sort_order yet, so they land at the end of the list.
+function AddCategory({ categories, onAdded }) {
+  const openRef = useRef(null)
+  const formRef = useRef(null)
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  // it sits at the end of a scrolling list: bring the whole form (and
+  // any error) into view rather than leaving its buttons under the footer
+  useEffect(() => {
+    if (open) formRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [open, error])
+
+  const trimmed = name.trim()
+
+  function close() {
+    setOpen(false)
+    setName('')
+    setError(null)
+    // back to the button that opened it, which reappears after this render
+    requestAnimationFrame(() => openRef.current?.focus())
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!trimmed) return
+    const clash = categories.find((c) => c.name.toLowerCase() === trimmed.toLowerCase())
+    if (clash) {
+      setError(`"${clash.name}" already exists.`)
+      return
+    }
+    // the app treats this name as "no category" (see resolveCategory)
+    if (trimmed.toLowerCase() === 'uncategorized') {
+      setError('Items without a category already show as Uncategorized.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    const { error: insertError } = await supabase
+      .from('categories')
+      .insert({ household_id: HOUSEHOLD_ID, name: trimmed })
+    setBusy(false)
+    if (insertError) {
+      console.error(insertError)
+      setError("Couldn't add it. Check your connection and try again.")
+      return
+    }
+    onAdded(trimmed)
+    close()
+  }
+
+  if (!open) {
+    return (
+      <button
+        ref={openRef}
+        type="button"
+        className="category-add-toggle"
+        onClick={() => setOpen(true)}
+      >
+        + Add category
+      </button>
+    )
+  }
+
+  return (
+    <form ref={formRef} className="category-row-edit category-add" onSubmit={handleSubmit}>
+      <input
+        autoFocus
+        aria-label="New category name"
+        placeholder="e.g. Snacks"
+        autoCapitalize="words"
+        enterKeyHint="done"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value)
+          setError(null)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault() // close the form, not the whole dialog
+            close()
+          }
+        }}
+        disabled={busy}
+      />
+      {error && (
+        <p className="field-hint" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="category-row-edit-actions">
+        <button type="submit" disabled={busy || !trimmed}>
+          Add
+        </button>
+        <button type="button" className="secondary-button" onClick={close} disabled={busy}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
 // Postgres / PostgREST codes for a column that doesn't exist: what a
 // reorder gets before migrations/003_category_order.sql has been run.
 const MISSING_COLUMN = ['42703', 'PGRST204']
@@ -308,10 +425,10 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
   }, {})
   const uncategorized = items.filter((i) => !i.category_id).length
 
-  async function handleMove(category, delta) {
+  // to: the position (0-based) to move the category to
+  async function handleMove(category, to) {
     const from = ordered.findIndex((c) => c.id === category.id)
-    const to = from + delta
-    if (to < 0 || to >= ordered.length) return
+    if (from === to || to < 0 || to >= ordered.length) return
     const next = [...ordered]
     next.splice(from, 1)
     next.splice(to, 0, category)
@@ -391,9 +508,17 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
             </ul>
           ) : (
             <p className="field-note">
-              No categories yet. Add one by typing it into an item's Category field.
+              No categories yet. Add your store's sections here (Produce, Dairy…), or type a
+              new one into an item's Category field.
             </p>
           )}
+          <AddCategory
+            categories={categories}
+            onAdded={(name) => {
+              setAnnouncement(`Added ${name}.`)
+              onChanged()
+            }}
+          />
           {uncategorized > 0 && (
             <p className="field-note">{itemCountLabel(uncategorized)} uncategorized</p>
           )}

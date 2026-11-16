@@ -1,17 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
 import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import { categoryOptions, findCategory } from '../utils/items'
 import { similarItems } from '../utils/search'
+import { sortedIds, useDiscardGuard, useIsDirty } from '../hooks/useDiscardGuard'
 
 // Modal for creating a catalog item (or, for an existing item that has no
 // store yet, just picking its stores). Required fields come first and the
 // optional ones follow, all visible, so nothing is hidden behind a toggle.
 //
 // onSave(details) resolves to an error message, or nothing on success.
+// initialStoreIds preselects stores (e.g. the one being shopped); like the
+// prefilled name, they're the starting point, not a change to discard.
 export default function NewItemDialog({
   initialName,
+  initialStoreIds = [],
   existing,
   items,
   categories,
@@ -22,8 +26,15 @@ export default function NewItemDialog({
   submitLabel = 'Add to list',
 }) {
   const dialogRef = useRef(null)
-  const [name, setName] = useState(existing?.name || initialName)
-  const [selectedStores, setSelectedStores] = useState([])
+  const hintId = useId()
+  const [name, setName] = useState(existing?.name || initialName || '')
+  const [selectedStores, setSelectedStores] = useState(() =>
+    initialStoreIds.filter((id) => stores.some((s) => s.id === id)),
+  )
+  // whether the user has changed these yet: until then a missing value is
+  // pointed out calmly rather than in error red
+  const [nameEdited, setNameEdited] = useState(false)
+  const [storesEdited, setStoresEdited] = useState(false)
   const [category, setCategory] = useState('')
   const [brandName, setBrandName] = useState('')
   const [imageUrl, setImageUrl] = useState('')
@@ -42,7 +53,44 @@ export default function NewItemDialog({
   // same thing under another spelling? (a hint only; it may really be new)
   const similar = !existing && !duplicate ? similarItems(items, trimmedName) : []
   const newCategory = !!category.trim() && !findCategory(categories, category)
-  const canSave = !!trimmedName && !duplicate && selectedStores.length > 0 && !saving && !photoBusy
+  const missingName = !existing && !trimmedName
+  const missingStores = selectedStores.length === 0
+  const canSave = !missingName && !duplicate && !missingStores && !saving && !photoBusy
+
+  const dirty = useIsDirty({
+    name: trimmedName,
+    stores: sortedIds(selectedStores),
+    category: category.trim(),
+    brandName: brandName.trim(),
+    imageUrl,
+    selectionCriteria: selectionCriteria.trim(),
+  })
+  const { requestClose, discardPrompt } = useDiscardGuard({ dirty, busy: saving, onClose })
+
+  // Save stays disabled until these are sorted, so each one says why right
+  // under its field (and is read out with it)
+  let nameHint = null
+  if (missingName) {
+    nameHint = (
+      <span id={`${hintId}-name`} className={nameEdited ? 'field-hint' : 'field-note'}>
+        Give the item a name to save.
+      </span>
+    )
+  } else if (duplicate) {
+    nameHint = (
+      <span id={`${hintId}-name`} className="field-hint">
+        Already in the catalog. Use another name to save.
+      </span>
+    )
+  }
+  let storesHint = null
+  if (missingStores) {
+    storesHint = (
+      <span id={`${hintId}-stores`} className={storesEdited ? 'field-hint' : 'field-note'}>
+        {stores.length ? 'Pick at least one store to save.' : 'No stores yet. Add one to save.'}
+      </span>
+    )
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -70,11 +118,11 @@ export default function NewItemDialog({
       aria-labelledby="item-dialog-title"
       onCancel={(e) => {
         e.preventDefault()
-        if (e.target === dialogRef.current && !saving) onClose()
+        if (e.target === dialogRef.current) requestClose()
       }}
       onClick={(e) => {
         // a click on the backdrop lands on the <dialog> itself
-        if (e.target === dialogRef.current && !saving) onClose()
+        if (e.target === dialogRef.current) requestClose()
       }}
     >
       <form className="item-dialog-form" onSubmit={handleSubmit}>
@@ -88,10 +136,22 @@ export default function NewItemDialog({
           {!existing && (
             <label className="dialog-field">
               <span className="field-label">Name</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} />
-              {duplicate && <span className="field-hint">That item already exists.</span>}
+              <input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setNameEdited(true)
+                }}
+                aria-invalid={(duplicate || (missingName && nameEdited)) || undefined}
+                aria-describedby={
+                  [nameHint && `${hintId}-name`, similar.length > 0 && `${hintId}-similar`]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
+              />
+              {nameHint}
               {similar.length > 0 && (
-                <span className="field-note">
+                <span id={`${hintId}-similar`} className="field-note">
                   Similar to {similar.map((i) => i.name).join(', ')}, already in the catalog.
                 </span>
               )}
@@ -101,10 +161,14 @@ export default function NewItemDialog({
           <StoreChips
             stores={stores}
             value={selectedStores}
-            onChange={setSelectedStores}
+            onChange={(ids) => {
+              setSelectedStores(ids)
+              setStoresEdited(true)
+            }}
             onStoreAdded={onStoreAdded}
+            describedBy={storesHint ? `${hintId}-stores` : undefined}
           >
-            {!stores.length && <span className="field-hint">No stores exist yet.</span>}
+            {storesHint}
           </StoreChips>
 
           {!existing && (
@@ -154,14 +218,21 @@ export default function NewItemDialog({
           )}
           <div className="dialog-actions">
             <button type="submit" disabled={!canSave}>
-              {saving ? 'Saving…' : submitLabel}
+              {/* the photo is what's holding Save up, so say so where people look */}
+              {photoBusy ? 'Uploading photo…' : saving ? 'Saving…' : submitLabel}
             </button>
-            <button type="button" className="secondary-button" onClick={onClose} disabled={saving}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={requestClose}
+              disabled={saving}
+            >
               Cancel
             </button>
           </div>
         </div>
       </form>
+      {discardPrompt}
     </dialog>
   )
 }

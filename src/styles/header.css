@@ -1,13 +1,25 @@
 :root {
-  /* height of the sticky header, for anything else that sticks below it */
-  --app-header-height: calc(56px + env(safe-area-inset-top));
+  /* height of the sticky header, for anything else that sticks below it.
+     Kept compact: the title only repeats the active tab's name, so it
+     shouldn't cost a full row of the list. */
+  --app-header-height: calc(48px + env(safe-area-inset-top));
+  /* the List tab's store pills stick under the header: a tap-tall row
+     plus a little air below it (see .store-filter in list.css) */
+  --store-filter-height: calc(var(--tap) + var(--space-1));
   /* a field the browser scrolls to on focus lands below the header,
      not underneath it */
   scroll-padding-top: calc(var(--app-header-height) + var(--space-2));
 }
 
+/* on the List tab the pills are stuck under the header as well */
+:root:has(.store-filter) {
+  scroll-padding-top: calc(
+    var(--app-header-height) + var(--store-filter-height) + var(--space-2)
+  );
+}
+
 .app {
-  max-width: 480px;
+  max-width: var(--column-width);
   margin: 0 auto;
   /* the header handles the top inset; the bottom leaves room for the tab
      bar so the last row can scroll clear of it */
@@ -42,9 +54,20 @@
   box-shadow: 0 1px 0 var(--border);
 }
 
+/* On the List tab the store pills sit right under the header and stick
+   with it, so the two read as one block: no gap between them, and the
+   scrolled hairline moves to the bottom of the pills (list.css). */
+.app-header:has(+ .store-filter) {
+  margin-bottom: 0;
+}
+
+.app-header.scrolled:has(+ .store-filter) {
+  box-shadow: none;
+}
+
 .app-header h1 {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: 1.25rem;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -163,11 +186,11 @@
   position: fixed;
   z-index: 15;
   bottom: 0;
-  /* lined up with the 480px column on wide screens */
+  /* lined up with the app's column on wide screens */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 480px;
+  max-width: var(--column-width);
   display: flex;
   padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: var(--surface);
@@ -245,6 +268,23 @@
   font-weight: 600;
   line-height: 18px;
   text-align: center;
+}
+
+/* Wide screens: the column sits on a slightly sunken page with a hairline
+   down each side, so it reads as a deliberate column (as the tab bar
+   already does) rather than content adrift in an empty window. */
+@media (min-width: 900px) {
+  body {
+    background: var(--surface-sunken);
+  }
+
+  .app {
+    min-height: 100vh;
+    background: var(--bg);
+    box-shadow:
+      1px 0 0 var(--border-subtle),
+      -1px 0 0 var(--border-subtle);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import AddStoreInline from './AddStoreInline'
 
+// Sticky row of store pills on the List tab. The last pill opens the
+// store manager (add, rename, delete) via onEditStores; it lives inside
+// the scrolling row rather than pinned beside it, so it never squeezes
+// the stores themselves on a narrow phone.
 export default function StoreFilter({
   stores,
   entries = [],
   itemStores = [],
   activeStoreId,
   onChange,
-  onStoreAdded,
+  onEditStores,
 }) {
   const scrollerRef = useRef(null)
   const pillRefs = useRef({})
@@ -98,10 +101,28 @@ export default function StoreFilter({
       >
         {pill('all', 'All items', counts.all, null)}
         {stores.map((store) => pill(store.id, store.name, counts.byStore[store.id] || 0, store.id))}
+        <button
+          type="button"
+          className="store-pill store-pill-edit"
+          aria-haspopup="dialog"
+          onClick={onEditStores}
+        >
+          <span className="store-pill-label">
+            <PencilIcon />
+            {stores.length ? 'Edit stores' : 'Add a store'}
+          </span>
+        </button>
       </div>
-      {/* outside the scrolling row: the button is always in reach, and
-          its form drops onto a full-width line of its own */}
-      <AddStoreInline stores={stores} onAdded={() => onStoreAdded?.()} />
     </div>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
   )
 }
