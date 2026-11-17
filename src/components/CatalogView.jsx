@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import ItemEditDialog from './ItemEditDialog'
 import NewItemDialog from './NewItemDialog'
 import CategoryManager from './CategoryManager'
-import { createItem, sortCategories } from '../utils/items'
+import { createItem, photoUrlsFor, sortCategories } from '../utils/items'
 import { formatRelativeTime } from '../utils/time'
 import { searchByName } from '../utils/search'
 import EmptyState from './EmptyState'
@@ -68,6 +68,7 @@ export default function CatalogView({
   categories,
   itemStores,
   brands,
+  photos = [],
   stores,
   entries = [],
   onAddToList,
@@ -301,10 +302,6 @@ export default function CatalogView({
       <div className="catalog-list">
         {filtered.map((item) => {
           const itemBrands = brandsByItem[item.id] || []
-          // same pick as ItemDetail: the preferred brand, else the first
-          const preferred = itemBrands.find((b) => b.is_preferred) || itemBrands[0]
-          // the item's own photo, else its brand's packaging
-          const photo = item.image_url || preferred?.image_url
           const category = categoriesById[item.category_id]
           const storeNames = (storeIdsByItem[item.id] || [])
             .map((id) => storesById[id]?.name)
@@ -322,17 +319,6 @@ export default function CatalogView({
                 className="catalog-row-header"
                 onClick={() => setEditingId(item.id)}
               >
-                {photo && (
-                  <img
-                    className="catalog-row-photo"
-                    src={photo}
-                    alt=""
-                    width="40"
-                    height="40"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
                 <span className="catalog-row-text">
                   <span className="catalog-row-title">
                     <span className="item-name">{item.name}</span>
@@ -367,6 +353,7 @@ export default function CatalogView({
                   stores={stores}
                   storeIds={storeIdsByItem[item.id] || []}
                   brands={itemBrands}
+                  photos={photoUrlsFor(photos, item.id)}
                   onSaved={handleSaved}
                   onClose={() => setEditingId(null)}
                   onStoreAdded={onStoreAdded}

@@ -19,7 +19,7 @@ Supabase.
    run `migrations/003_category_order.sql`.
    If you set up before stores could be renamed, also run
    `migrations/004_stores_update.sql`. If you set up before items could
-   have their own photo (not tied to a brand), also run
+   have their own photos (not tied to a brand), also run
    `migrations/005_item_photo.sql`.
 3. **Create your household row** — in the Supabase table editor, add one
    row to `households` (any name), then copy its `id`.

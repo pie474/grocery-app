@@ -12,6 +12,7 @@ import MemberPrompt from './components/MemberPrompt'
 import AppHeader from './components/AppHeader'
 import BottomNav from './components/BottomNav'
 import ListSkeleton from './components/ListSkeleton'
+import { isMissingTable } from './utils/items'
 import {
   getDeviceMemberId,
   setDeviceMemberId,
@@ -35,6 +36,7 @@ export default function App() {
   const [categories, setCategories] = useState([])
   const [itemStores, setItemStores] = useState([])
   const [brands, setBrands] = useState([])
+  const [photos, setPhotos] = useState([]) // item_photos rows
   const [entries, setEntries] = useState([])
   const [members, setMembers] = useState([])
   const [activeStoreId, setActiveStoreId] = useState(null)
@@ -60,6 +62,7 @@ export default function App() {
         supabase.from('categories').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('item_stores').select('*'),
         supabase.from('item_brands').select('*'),
+        supabase.from('item_photos').select('*'),
         supabase
           .from('list_entries')
           .select('*')
@@ -68,7 +71,9 @@ export default function App() {
         supabase.from('members').select('*').eq('household_id', HOUSEHOLD_ID),
       ])
 
-    const failed = results.find((res) => res.error)
+    // item_photos doesn't exist until migrations/005_item_photo.sql has
+    // run; that just means no item has photos yet, not a failed load
+    const failed = results.find((res) => res.error && !isMissingTable(res.error))
     if (failed) {
       // Keep whatever is already on screen rather than blanking the list
       // on a flaky connection.
@@ -84,6 +89,7 @@ export default function App() {
       categoriesRes,
       itemStoresRes,
       brandsRes,
+      photosRes,
       entriesRes,
       membersRes,
     ] = results
@@ -92,6 +98,7 @@ export default function App() {
     setCategories(categoriesRes.data || [])
     setItemStores(itemStoresRes.data || [])
     setBrands(brandsRes.data || [])
+    setPhotos(photosRes.data || [])
     setEntries(entriesRes.data || [])
     setMembers(membersRes.data || [])
     setLoadError(false)
@@ -563,6 +570,7 @@ export default function App() {
             categories={categories}
             itemStores={itemStores}
             brands={brands}
+            photos={photos}
             stores={stores}
             members={members}
             activeStoreId={activeStoreId}
@@ -592,6 +600,7 @@ export default function App() {
           categories={categories}
           itemStores={itemStores}
           brands={brands}
+          photos={photos}
           stores={stores}
           entries={entries}
           onAddToList={handleAddToList}

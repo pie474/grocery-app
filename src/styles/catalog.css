@@ -266,16 +266,6 @@
   border-radius: var(--radius-md);
 }
 
-/* the preferred brand's photo, small: a cue, not a viewer */
-.catalog-row-photo {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-}
-
 .catalog-row-text {
   flex: 1;
   min-width: 0;

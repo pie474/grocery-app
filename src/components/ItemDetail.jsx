@@ -8,7 +8,14 @@ import PhotoThumb from './PhotoThumb'
 // stores: the stores that sell it. activeStoreId: the store the list is
 // filtered to, if any; that one goes without saying, so only the others
 // are listed ("Also at").
-export default function ItemDetail({ item, brands, stores = [], activeStoreId = null }) {
+// photos: the item's own photo URLs, shown as a strip above the facts.
+export default function ItemDetail({
+  item,
+  brands,
+  photos = [],
+  stores = [],
+  activeStoreId = null,
+}) {
   const preferred = brands.find((b) => b.is_preferred) || brands[0]
   const otherBrands = brands.filter((b) => b !== preferred)
   const filtered = stores.some((s) => s.id === activeStoreId)
@@ -16,9 +23,8 @@ export default function ItemDetail({ item, brands, stores = [], activeStoreId = 
     .filter((s) => s.id !== activeStoreId)
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b))
-  const hasPhoto = !!(item.image_url || preferred?.image_url)
   if (
-    !hasPhoto &&
+    !photos.length &&
     !preferred &&
     !item.selection_criteria &&
     !item.last_bought_at &&
@@ -28,27 +34,28 @@ export default function ItemDetail({ item, brands, stores = [], activeStoreId = 
   }
 
   return (
-    <div className="item-facts">
-      {hasPhoto && (
-        // the item's own photo first, then the brand's packaging
-        <div className="item-facts-photos">
-          {item.image_url && (
+    <div className="item-detail">
+      {photos.length > 0 && (
+        <div className="item-photo-strip">
+          {photos.map((url) => (
             <PhotoThumb
+              key={url}
               className="item-facts-photo"
-              src={item.image_url}
+              src={url}
               alt={item.name}
               caption={item.name}
             />
-          )}
-          {preferred?.image_url && (
-            <PhotoThumb
-              className="item-facts-photo"
-              src={preferred.image_url}
-              alt={preferred.brand_name}
-              caption={preferred.brand_name}
-            />
-          )}
+          ))}
         </div>
+      )}
+      <div className="item-facts">
+      {preferred?.image_url && (
+        <PhotoThumb
+          className="item-facts-photo"
+          src={preferred.image_url}
+          alt={preferred.brand_name}
+          caption={preferred.brand_name}
+        />
       )}
       <dl>
         {preferred && (
@@ -83,6 +90,7 @@ export default function ItemDetail({ item, brands, stores = [], activeStoreId = 
           </div>
         )}
       </dl>
+      </div>
     </div>
   )
 }

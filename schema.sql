@@ -42,7 +42,6 @@ create table items (
   category_id uuid references categories(id) on delete set null, -- null = uncategorized
   unit text,
   selection_criteria text, -- e.g. "firm, deep green, slight give at the stem"
-  image_url text, -- a photo of the item itself; brand photos live on item_brands
   last_bought_at timestamptz
 );
 
@@ -59,6 +58,16 @@ create table item_brands (
   brand_name text not null,
   image_url text,
   is_preferred boolean default false
+);
+
+-- photos of the item itself, as many as you like; a brand's packaging
+-- photo lives on item_brands instead
+create table item_photos (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid references items(id) on delete cascade,
+  image_url text not null,
+  position integer default 0, -- display order
+  created_at timestamptz default now()
 );
 
 -- the live, editable list: one row per thing currently needed or recently bought
@@ -93,6 +102,7 @@ alter table categories enable row level security;
 alter table items enable row level security;
 alter table item_stores enable row level security;
 alter table item_brands enable row level security;
+alter table item_photos enable row level security;
 alter table list_entries enable row level security;
 
 create policy "household read" on categories for select using (true);
@@ -122,6 +132,10 @@ create policy "household delete" on item_stores for delete using (true);
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
 create policy "household delete" on item_brands for delete using (true);
+
+create policy "household read" on item_photos for select using (true);
+create policy "household write" on item_photos for insert with check (true);
+create policy "household delete" on item_photos for delete using (true);
 
 -- Item photos: a public bucket (the URL is what gets saved on item_brands).
 -- Same open-by-design policies as everything else here; see the note below.

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import PhotoPicker from './PhotoPicker'
+import PhotosField from './PhotosField'
 import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import { categoryOptions, findCategory } from '../utils/items'
@@ -37,7 +38,7 @@ export default function NewItemDialog({
   const [storesEdited, setStoresEdited] = useState(false)
   const [category, setCategory] = useState('')
   const [brandName, setBrandName] = useState('')
-  const [imageUrl, setImageUrl] = useState('') // of the item itself
+  const [photos, setPhotos] = useState([]) // of the item itself
   const [brandImageUrl, setBrandImageUrl] = useState('')
   const [selectionCriteria, setSelectionCriteria] = useState('')
   const [saving, setSaving] = useState(false)
@@ -66,7 +67,7 @@ export default function NewItemDialog({
     stores: sortedIds(selectedStores),
     category: category.trim(),
     brandName: brandName.trim(),
-    imageUrl,
+    photos,
     brandImageUrl,
     selectionCriteria: selectionCriteria.trim(),
   })
@@ -107,7 +108,7 @@ export default function NewItemDialog({
       stores: selectedStores,
       category,
       brandName,
-      imageUrl,
+      photos,
       brandImageUrl,
       selectionCriteria,
     })
@@ -191,13 +192,12 @@ export default function NewItemDialog({
                 {newCategory && <span className="field-note">New category</span>}
               </label>
               <div className="dialog-field">
-                <span className="field-label">Photo</span>
-                <PhotoPicker
-                  imageUrl={imageUrl}
-                  onChange={setImageUrl}
+                <span className="field-label">Photos</span>
+                <PhotosField
+                  photos={photos}
+                  onChange={setPhotos}
                   onBusyChange={trackUpload}
-                  addLabel="Add a photo"
-                  removable
+                  itemName={trimmedName}
                 />
                 <span className="field-note">Of the item itself, whatever the brand.</span>
               </div>

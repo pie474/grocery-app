@@ -1,11 +1,18 @@
 import { useId, useLayoutEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import PhotoPicker from './PhotoPicker'
+import PhotosField from './PhotosField'
 import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import ConfirmDialog from './ConfirmDialog'
 import { sortedIds, useIsDirty } from '../hooks/useDiscardGuard'
-import { categoryOptions, findCategory, itemPhotoError, resolveCategory } from '../utils/items'
+import {
+  categoryOptions,
+  findCategory,
+  itemPhotoError,
+  resolveCategory,
+  saveItemPhotos,
+} from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -29,6 +36,7 @@ export default function ItemEditForm({
   categories,
   storeIds,
   brands,
+  photos: initialPhotos = [],
   stores,
   onSaved,
   onCancel,
@@ -42,8 +50,9 @@ export default function ItemEditForm({
     () => categories.find((c) => c.id === item.category_id)?.name || '',
   )
   const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
-  // a photo of the item itself; each brand below has its own
-  const [imageUrl, setImageUrl] = useState(item.image_url || '')
+  // photos of the item itself (URLs, in order); each brand below has its own
+  const [photos, setPhotos] = useState(initialPhotos)
+  const [startingPhotos] = useState(initialPhotos)
   const [selectedStores, setSelectedStores] = useState(storeIds || [])
   const [brandRows, setBrandRows] = useState(
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
@@ -64,7 +73,7 @@ export default function ItemEditForm({
     name: name.trim(),
     category: category.trim(),
     selectionCriteria: selectionCriteria.trim(),
-    imageUrl,
+    photos,
     stores: sortedIds(selectedStores),
     brands: brandRows
       .filter((r) => r.brand_name.trim() || r.image_url)
@@ -142,12 +151,16 @@ export default function ItemEditForm({
           name: name.trim(),
           category_id: categoryId,
           selection_criteria: selectionCriteria.trim() || null,
-          // only when it changed, so saving keeps working on a database
-          // that doesn't have the column yet
-          ...(imageUrl !== (item.image_url || '') && { image_url: imageUrl || null }),
         })
         .eq('id', itemId)
       if (itemError) return itemError
+
+      // only when they changed, so saving keeps working on a database
+      // that doesn't have the item_photos table yet
+      if (photos.join('\n') !== startingPhotos.join('\n')) {
+        const photosError = await saveItemPhotos(itemId, photos)
+        if (photosError) return photosError
+      }
 
       // Sync stores: replace the full set for this item.
       const { error: unlinkError } = await supabase
@@ -252,13 +265,12 @@ export default function ItemEditForm({
         </StoreChips>
 
         <div className="dialog-field">
-          <span className="field-label">Photo</span>
-          <PhotoPicker
-            imageUrl={imageUrl}
-            onChange={setImageUrl}
+          <span className="field-label">Photos</span>
+          <PhotosField
+            photos={photos}
+            onChange={setPhotos}
             onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
-            addLabel="Add a photo"
-            removable
+            itemName={name.trim()}
           />
           <span className="field-note">
             Of the item itself, whatever the brand. Brand photos go with each brand below.
