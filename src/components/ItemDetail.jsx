@@ -1,8 +1,8 @@
 import { formatRelativeTime } from '../utils/time'
 import PhotoThumb from './PhotoThumb'
 
-// What the household knows about an item, as labelled facts: brand (with
-// its photo), how to pick a good one, where it's sold, and when it was
+// What the household knows about an item, as labelled facts: its own
+// photo, brand (with its photo), how to pick a good one, where it's sold, and when it was
 // last bought. Shows nothing when there's nothing to say.
 //
 // stores: the stores that sell it. activeStoreId: the store the list is
@@ -16,19 +16,39 @@ export default function ItemDetail({ item, brands, stores = [], activeStoreId = 
     .filter((s) => s.id !== activeStoreId)
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b))
-  if (!preferred && !item.selection_criteria && !item.last_bought_at && !stores.length) {
+  const hasPhoto = !!(item.image_url || preferred?.image_url)
+  if (
+    !hasPhoto &&
+    !preferred &&
+    !item.selection_criteria &&
+    !item.last_bought_at &&
+    !stores.length
+  ) {
     return null
   }
 
   return (
     <div className="item-facts">
-      {preferred?.image_url && (
-        <PhotoThumb
-          className="item-facts-photo"
-          src={preferred.image_url}
-          alt={preferred.brand_name}
-          caption={preferred.brand_name}
-        />
+      {hasPhoto && (
+        // the item's own photo first, then the brand's packaging
+        <div className="item-facts-photos">
+          {item.image_url && (
+            <PhotoThumb
+              className="item-facts-photo"
+              src={item.image_url}
+              alt={item.name}
+              caption={item.name}
+            />
+          )}
+          {preferred?.image_url && (
+            <PhotoThumb
+              className="item-facts-photo"
+              src={preferred.image_url}
+              alt={preferred.brand_name}
+              caption={preferred.brand_name}
+            />
+          )}
+        </div>
       )}
       <dl>
         {preferred && (

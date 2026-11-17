@@ -42,6 +42,7 @@ create table items (
   category_id uuid references categories(id) on delete set null, -- null = uncategorized
   unit text,
   selection_criteria text, -- e.g. "firm, deep green, slight give at the stem"
+  image_url text, -- a photo of the item itself; brand photos live on item_brands
   last_bought_at timestamptz
 );
 

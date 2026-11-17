@@ -303,6 +303,8 @@ export default function CatalogView({
           const itemBrands = brandsByItem[item.id] || []
           // same pick as ItemDetail: the preferred brand, else the first
           const preferred = itemBrands.find((b) => b.is_preferred) || itemBrands[0]
+          // the item's own photo, else its brand's packaging
+          const photo = item.image_url || preferred?.image_url
           const category = categoriesById[item.category_id]
           const storeNames = (storeIdsByItem[item.id] || [])
             .map((id) => storesById[id]?.name)
@@ -320,10 +322,10 @@ export default function CatalogView({
                 className="catalog-row-header"
                 onClick={() => setEditingId(item.id)}
               >
-                {preferred?.image_url && (
+                {photo && (
                   <img
                     className="catalog-row-photo"
-                    src={preferred.image_url}
+                    src={photo}
                     alt=""
                     width="40"
                     height="40"

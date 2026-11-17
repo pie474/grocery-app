@@ -14,6 +14,16 @@ export async function linkStores(itemId, storeIds) {
   return { itemId }
 }
 
+// Postgres / PostgREST codes for a column that doesn't exist: what saving
+// an item photo gets before migrations/005_item_photo.sql has been run.
+const MISSING_COLUMN = ['42703', 'PGRST204']
+
+export function itemPhotoError(error) {
+  return MISSING_COLUMN.includes(error?.code)
+    ? "Item photos aren't set up on this database yet. Whoever manages the app can run migrations/005_item_photo.sql to turn them on. Remove the photo to save without it."
+    : null
+}
+
 export async function createItem(details, categories) {
   const { categoryId, error: categoryError } = await resolveCategory(
     categories,
@@ -28,20 +38,23 @@ export async function createItem(details, categories) {
       name: details.name,
       category_id: categoryId,
       selection_criteria: details.selectionCriteria.trim() || null,
+      // left out when there is none, so creating items keeps working on a
+      // database that doesn't have the column yet
+      ...(details.imageUrl && { image_url: details.imageUrl }),
     })
     .select()
     .single()
   if (error) {
     console.error(error)
-    return { error: "Couldn't create the item. Try again." }
+    return { error: itemPhotoError(error) || "Couldn't create the item. Try again." }
   }
 
-  if (details.brandName.trim() || details.imageUrl) {
-    // a photo with no brand typed in is saved under the item's own name
+  if (details.brandName.trim() || details.brandImageUrl) {
+    // a brand photo with no brand typed in is saved under the item's own name
     await supabase.from('item_brands').insert({
       item_id: newItem.id,
       brand_name: details.brandName.trim() || details.name,
-      image_url: details.imageUrl.trim() || null,
+      image_url: details.brandImageUrl || null,
       is_preferred: true,
     })
   }

@@ -37,10 +37,14 @@ export default function NewItemDialog({
   const [storesEdited, setStoresEdited] = useState(false)
   const [category, setCategory] = useState('')
   const [brandName, setBrandName] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageUrl, setImageUrl] = useState('') // of the item itself
+  const [brandImageUrl, setBrandImageUrl] = useState('')
   const [selectionCriteria, setSelectionCriteria] = useState('')
   const [saving, setSaving] = useState(false)
-  const [photoBusy, setPhotoBusy] = useState(false)
+  // two photo pickers can be uploading at once
+  const [uploadsInFlight, setUploadsInFlight] = useState(0)
+  const photoBusy = uploadsInFlight > 0
+  const trackUpload = (busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export default function NewItemDialog({
     category: category.trim(),
     brandName: brandName.trim(),
     imageUrl,
+    brandImageUrl,
     selectionCriteria: selectionCriteria.trim(),
   })
   const { requestClose, discardPrompt } = useDiscardGuard({ dirty, busy: saving, onClose })
@@ -103,6 +108,7 @@ export default function NewItemDialog({
       category,
       brandName,
       imageUrl,
+      brandImageUrl,
       selectionCriteria,
     })
     if (message) {
@@ -184,17 +190,28 @@ export default function NewItemDialog({
                 />
                 {newCategory && <span className="field-note">New category</span>}
               </label>
-              <label className="dialog-field">
-                <span className="field-label">Preferred brand</span>
-                <input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
-              </label>
               <div className="dialog-field">
                 <span className="field-label">Photo</span>
                 <PhotoPicker
                   imageUrl={imageUrl}
                   onChange={setImageUrl}
-                  onBusyChange={setPhotoBusy}
+                  onBusyChange={trackUpload}
                   addLabel="Add a photo"
+                  removable
+                />
+                <span className="field-note">Of the item itself, whatever the brand.</span>
+              </div>
+              <label className="dialog-field">
+                <span className="field-label">Preferred brand</span>
+                <input value={brandName} onChange={(e) => setBrandName(e.target.value)} />
+              </label>
+              <div className="dialog-field">
+                <span className="field-label">Brand photo</span>
+                <PhotoPicker
+                  imageUrl={brandImageUrl}
+                  onChange={setBrandImageUrl}
+                  onBusyChange={trackUpload}
+                  addLabel="Add a brand photo"
                   removable
                 />
               </div>

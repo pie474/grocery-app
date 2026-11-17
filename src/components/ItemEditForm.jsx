@@ -5,7 +5,7 @@ import StoreChips from './StoreChips'
 import Autocomplete from './Autocomplete'
 import ConfirmDialog from './ConfirmDialog'
 import { sortedIds, useIsDirty } from '../hooks/useDiscardGuard'
-import { categoryOptions, findCategory, resolveCategory } from '../utils/items'
+import { categoryOptions, findCategory, itemPhotoError, resolveCategory } from '../utils/items'
 
 function makeBrandRow(brand) {
   return {
@@ -42,6 +42,8 @@ export default function ItemEditForm({
     () => categories.find((c) => c.id === item.category_id)?.name || '',
   )
   const [selectionCriteria, setSelectionCriteria] = useState(item.selection_criteria || '')
+  // a photo of the item itself; each brand below has its own
+  const [imageUrl, setImageUrl] = useState(item.image_url || '')
   const [selectedStores, setSelectedStores] = useState(storeIds || [])
   const [brandRows, setBrandRows] = useState(
     brands?.length ? brands.map(makeBrandRow) : [makeBrandRow()],
@@ -62,6 +64,7 @@ export default function ItemEditForm({
     name: name.trim(),
     category: category.trim(),
     selectionCriteria: selectionCriteria.trim(),
+    imageUrl,
     stores: sortedIds(selectedStores),
     brands: brandRows
       .filter((r) => r.brand_name.trim() || r.image_url)
@@ -139,6 +142,9 @@ export default function ItemEditForm({
           name: name.trim(),
           category_id: categoryId,
           selection_criteria: selectionCriteria.trim() || null,
+          // only when it changed, so saving keeps working on a database
+          // that doesn't have the column yet
+          ...(imageUrl !== (item.image_url || '') && { image_url: imageUrl || null }),
         })
         .eq('id', itemId)
       if (itemError) return itemError
@@ -182,7 +188,10 @@ export default function ItemEditForm({
     const saveError = await saveAll()
     if (saveError) {
       console.error(saveError)
-      setError("Couldn't save all of your changes. Check your connection and try again.")
+      setError(
+        itemPhotoError(saveError) ||
+          "Couldn't save all of your changes. Check your connection and try again.",
+      )
       setSaving(false)
       return
     }
@@ -241,6 +250,20 @@ export default function ItemEditForm({
             </span>
           )}
         </StoreChips>
+
+        <div className="dialog-field">
+          <span className="field-label">Photo</span>
+          <PhotoPicker
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+            onBusyChange={(busy) => setUploadsInFlight((n) => n + (busy ? 1 : -1))}
+            addLabel="Add a photo"
+            removable
+          />
+          <span className="field-note">
+            Of the item itself, whatever the brand. Brand photos go with each brand below.
+          </span>
+        </div>
 
         <label className="dialog-field">
           <span className="field-label">How to pick a good one</span>
