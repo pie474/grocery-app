@@ -8,27 +8,49 @@ function itemCountLabel(count) {
   return count === 1 ? '1 item' : `${count} items`
 }
 
-function ArrowIcon({ direction }) {
+// six dots: the usual "drag me" grip
+function GripIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      <path
-        d={direction === 'up' ? 'M3.5 10 8 5.5l4.5 4.5' : 'M3.5 6 8 10.5 12.5 6'}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+      {[3.5, 8, 12.5].map((y) => (
+        <g key={y}>
+          <circle cx="5.5" cy={y} r="1.3" />
+          <circle cx="10.5" cy={y} r="1.3" />
+        </g>
+      ))}
     </svg>
   )
 }
 
-// One category: read-only (name, item count, move buttons and a "⋮"
+// One category: read-only (a drag handle, name, item count and a "⋮"
 // menu) until someone picks Rename or Merge into… from the menu.
-function CategoryRow({ category, others, count, index, total, onMove, onChanged }) {
+// dragState is 'dragging' for the row being dragged, 'shifting' for the
+// others while a drag is on; dragOffset is how far (px) to draw it from
+// its resting place.
+function CategoryRow({
+  category,
+  others,
+  count,
+  index,
+  total,
+  onMove,
+  onChanged,
+  dragHandlers,
+  dragState,
+  dragOffset = 0,
+}) {
   const rowRef = useRef(null)
-  const upRef = useRef(null)
-  const downRef = useRef(null)
+  const handleRef = useRef(null)
+
+  // Arrow keys on the handle move one step, for keyboards and switch
+  // access. The row's DOM node moves with it, which can drop focus.
+  function handleKeyDown(e) {
+    const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+    if (!step) return
+    e.preventDefault()
+    onMove(category, index + step)
+    requestAnimationFrame(() => handleRef.current?.focus())
+  }
   const [mode, setMode] = useState('view') // 'view' | 'rename' | 'merge'
   const [confirming, setConfirming] = useState(null) // 'merge' | 'delete' | null
   const [name, setName] = useState(category.name)
@@ -124,49 +146,52 @@ function CategoryRow({ category, others, count, index, total, onMove, onChanged 
   }
 
   const menuItems = [
-    // big jumps, for a long list; the arrows are one step at a time
-    ...(index > 0 ? [{ label: 'Move to top', onSelect: () => moveTo(0) }] : []),
-    ...(index < total - 1 ? [{ label: 'Move to bottom', onSelect: () => moveTo(total - 1) }] : []),
+    // the same moves as dragging the handle, for anyone who'd rather tap
+    ...(index > 0
+      ? [
+          { label: 'Move to top', onSelect: () => moveTo(0) },
+          { label: 'Move up', onSelect: () => moveTo(index - 1) },
+        ]
+      : []),
+    ...(index < total - 1
+      ? [
+          { label: 'Move down', onSelect: () => moveTo(index + 1) },
+          { label: 'Move to bottom', onSelect: () => moveTo(total - 1) },
+        ]
+      : []),
     { label: 'Rename', onSelect: () => startEditing('rename') },
     ...(others.length ? [{ label: 'Merge into…', onSelect: () => startEditing('merge') }] : []),
     { label: 'Delete', danger: true, onSelect: () => setConfirming('delete') },
   ]
 
   return (
-    <li className="category-row" ref={rowRef}>
+    <li
+      className={dragState ? `category-row ${dragState}` : 'category-row'}
+      style={dragOffset ? { transform: `translateY(${dragOffset}px)` } : undefined}
+      ref={rowRef}
+    >
       {mode === 'view' && (
         <div className="category-row-view">
+          {total > 1 && (
+            <button
+              type="button"
+              className="category-drag-handle"
+              aria-label={`Reorder ${category.name}: drag, or use the up and down arrow keys`}
+              ref={handleRef}
+              disabled={busy}
+              onKeyDown={handleKeyDown}
+              onPointerDown={(e) => dragHandlers.start(e, category)}
+              onPointerMove={dragHandlers.move}
+              onPointerUp={() => dragHandlers.end(true)}
+              onPointerCancel={() => dragHandlers.end(false)}
+            >
+              <GripIcon />
+            </button>
+          )}
           <span className="category-row-text">
             <span className="category-name">{category.name}</span>
             <span className="category-count">{itemCountLabel(count)}</span>
           </span>
-          <button
-            type="button"
-            className="category-move-button"
-            aria-label={`Move ${category.name} up`}
-            ref={upRef}
-            disabled={index === 0}
-            onClick={() => {
-              // this button is about to be disabled; keep focus in the row
-              if (index === 1) downRef.current?.focus()
-              onMove(category, index - 1)
-            }}
-          >
-            <ArrowIcon direction="up" />
-          </button>
-          <button
-            type="button"
-            className="category-move-button"
-            aria-label={`Move ${category.name} down`}
-            ref={downRef}
-            disabled={index === total - 1}
-            onClick={() => {
-              if (index === total - 2) upRef.current?.focus()
-              onMove(category, index + 1)
-            }}
-          >
-            <ArrowIcon direction="down" />
-          </button>
           <ActionMenu label={`More actions for ${category.name}`} items={menuItems} disabled={busy} />
         </div>
       )}
@@ -398,6 +423,12 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
   // ids in the order just chosen here, shown until the saved order comes
   // back from the server (or put back if the save fails)
   const [pendingOrder, setPendingOrder] = useState(null)
+  const listRef = useRef(null)
+  // The drag in progress. The ref holds what the pointer handlers need
+  // (start position, where each row was when it began); the state holds
+  // what drawing needs: { id, from, to, dy, height }.
+  const dragRef = useRef(null)
+  const [drag, setDrag] = useState(null)
   const [orderError, setOrderError] = useState(null)
   const [announcement, setAnnouncement] = useState('')
 
@@ -461,6 +492,106 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
     onChanged()
   }
 
+  function startDrag(e, category) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const from = ordered.findIndex((c) => c.id === category.id)
+    const rects = [...listRef.current.children].map((row) => {
+      const { top, height } = row.getBoundingClientRect()
+      return { top, height }
+    })
+    // what scrolls when the list is longer than the dialog
+    let scroller = listRef.current.parentElement
+    while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+      scroller = scroller.parentElement
+    }
+    scroller ||= dialogRef.current
+    // keeps the moves coming to the handle even once the finger is off it
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragRef.current = {
+      category,
+      from,
+      to: from,
+      rects,
+      scroller,
+      startY: e.clientY,
+      lastY: e.clientY,
+      startScroll: scroller.scrollTop,
+      frame: requestAnimationFrame(autoScroll),
+    }
+    setDrag({ id: category.id, from, to: from, dy: 0, height: rects[from].height })
+  }
+
+  function updateDrag() {
+    const d = dragRef.current
+    if (!d) return
+    const first = d.rects[0]
+    const last = d.rects.at(-1)
+    const own = d.rects[d.from]
+    // the list scrolling under a still finger moves the row too
+    const moved = d.lastY - d.startY + (d.scroller.scrollTop - d.startScroll)
+    const dy = Math.max(
+      first.top - own.top,
+      Math.min(last.top + last.height - (own.top + own.height), moved),
+    )
+    // its new place: after every other row whose middle its own middle has passed
+    const center = own.top + own.height / 2 + dy
+    // (held against the very bottom its middle only just reaches the last
+    // row's, hence the half pixel of give for rows below it)
+    const to = d.rects.filter((r, i) => {
+      if (i === d.from) return false
+      const middle = r.top + r.height / 2
+      return i > d.from ? middle <= center + 0.5 : middle < center - 0.5
+    }).length
+    d.to = to
+    setDrag((prev) => prev && { ...prev, to, dy })
+  }
+
+  function moveDrag(e) {
+    if (!dragRef.current) return
+    dragRef.current.lastY = e.clientY
+    updateDrag()
+  }
+
+  // Holding the row near the top or bottom edge scrolls a long list.
+  function autoScroll() {
+    const d = dragRef.current
+    if (!d) return
+    const dialog = dialogRef.current
+    // the sticky header and footer cover the ends of the scrolling area
+    const top = dialog.querySelector('.dialog-header')?.getBoundingClientRect().bottom ?? 0
+    const bottom =
+      dialog.querySelector('.dialog-footer')?.getBoundingClientRect().top ?? window.innerHeight
+    const speed = d.lastY < top + 40 ? -8 : d.lastY > bottom - 40 ? 8 : 0
+    if (speed) {
+      const before = d.scroller.scrollTop
+      d.scroller.scrollTop += speed
+      if (d.scroller.scrollTop !== before) updateDrag()
+    }
+    d.frame = requestAnimationFrame(autoScroll)
+  }
+
+  // commit: false when the drag was interrupted (a call, a system gesture)
+  function endDrag(commit) {
+    const d = dragRef.current
+    if (!d) return
+    cancelAnimationFrame(d.frame)
+    dragRef.current = null
+    setDrag(null)
+    if (commit) handleMove(d.category, d.to)
+  }
+
+  const dragHandlers = { start: startDrag, move: moveDrag, end: endDrag }
+
+  // How far each row is drawn from its resting place mid-drag: the dragged
+  // one follows the finger, the ones it has passed step aside by its height.
+  function dragOffsetFor(category, index) {
+    if (!drag) return 0
+    if (category.id === drag.id) return drag.dy
+    if (drag.from < drag.to && index > drag.from && index <= drag.to) return -drag.height
+    if (drag.to < drag.from && index >= drag.to && index < drag.from) return drag.height
+    return 0
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -480,7 +611,7 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
           <h2 id="category-manager-title">Categories</h2>
           {categories.length > 1 && (
             <p className="field-note">
-              Put them in the order you walk the store; the list follows it.
+              Drag them into the order you walk the store; the list follows it.
             </p>
           )}
         </div>
@@ -492,7 +623,7 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
             </p>
           )}
           {categories.length ? (
-            <ul className="category-rows">
+            <ul className={drag ? 'category-rows dragging' : 'category-rows'} ref={listRef}>
               {ordered.map((category, index) => (
                 <CategoryRow
                   key={category.id}
@@ -503,6 +634,9 @@ export default function CategoryManager({ categories, items, onChanged, onClose 
                   total={ordered.length}
                   onMove={handleMove}
                   onChanged={onChanged}
+                  dragHandlers={dragHandlers}
+                  dragState={drag && (drag.id === category.id ? 'dragging' : 'shifting')}
+                  dragOffset={dragOffsetFor(category, index)}
                 />
               ))}
             </ul>

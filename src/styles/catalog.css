@@ -157,25 +157,53 @@
   font-weight: 400; /* list.css makes the List tab's group counts bold */
 }
 
-.category-move-button {
+/* Drag handle on the left of each row. touch-action: none hands the
+   finger's movement to the drag instead of scrolling the dialog. */
+.category-drag-handle {
   flex: none;
   display: grid;
   place-items: center;
   width: var(--tap);
   height: var(--tap);
+  margin-left: calc(-1 * var(--space-3));
   padding: 0;
   background: none;
   color: var(--text-muted);
   border-radius: var(--radius-md);
+  cursor: grab;
+  touch-action: none;
+  /* inside the button, so the focus ring doesn't run over the name */
+  outline-offset: -4px;
 }
 
-.category-move-button:hover:not(:disabled) {
-  background: var(--surface-sunken);
-  color: var(--text);
+.category-rows.dragging {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.category-move-button:disabled {
-  opacity: 0.3;
+.category-rows.dragging .category-drag-handle {
+  cursor: grabbing;
+}
+
+/* rows the dragged one passes slide out of its way; only while dragging,
+   so nothing animates back when the drop reorders the list for real */
+.category-row.shifting {
+  transition: transform var(--duration) var(--ease);
+}
+
+.category-row.dragging {
+  position: relative;
+  z-index: 1;
+  border-bottom-color: transparent;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-row.shifting {
+    transition: none;
+  }
 }
 
 .category-row .action-menu {
