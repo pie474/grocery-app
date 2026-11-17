@@ -91,7 +91,7 @@ alter publication supabase_realtime add table stores;
 alter publication supabase_realtime add table item_brands;
 alter publication supabase_realtime add table categories;
 
--- Row Level Security: this starter uses one shared household id (from
+-- Row Level Security: this app uses one shared household id (from
 -- .env) as the access boundary rather than per-user auth, since a family
 -- list usually doesn't need individual logins. Anyone with the anon key
 -- and household id can read/write that household's rows.
@@ -154,7 +154,7 @@ create policy "household delete" on members for delete using (true);
 
 create policy "household read" on households for select using (true);
 
--- NOTE: these policies are intentionally open (true) to keep the starter
+-- NOTE: these policies are intentionally open (true) to keep things
 -- simple — anyone with your anon key could read/write any household's
 -- data if they guessed a household_id. Fine for a private family app you
 -- don't share the URL for; if you want it locked down properly, add
