@@ -195,7 +195,18 @@ export default function ItemList({
                 </div>
                 {isExpanded && (
                   <div className="list-row-panel">
-                    {item && <ItemDetail item={item} brands={itemBrands} />}
+                    {item && (
+                      <ItemDetail
+                        item={item}
+                        brands={itemBrands}
+                        stores={stores.filter((store) =>
+                          itemStores.some(
+                            (link) => link.item_id === item.id && link.store_id === store.id,
+                          ),
+                        )}
+                        activeStoreId={activeStoreId}
+                      />
+                    )}
                     <div className="entry-panel-actions">
                       <button
                         type="button"

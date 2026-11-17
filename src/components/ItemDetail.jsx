@@ -2,12 +2,23 @@ import { formatRelativeTime } from '../utils/time'
 import PhotoThumb from './PhotoThumb'
 
 // What the household knows about an item, as labelled facts: brand (with
-// its photo), how to pick a good one, and when it was last bought. Shows
-// nothing when there's nothing to say.
-export default function ItemDetail({ item, brands }) {
+// its photo), how to pick a good one, where it's sold, and when it was
+// last bought. Shows nothing when there's nothing to say.
+//
+// stores: the stores that sell it. activeStoreId: the store the list is
+// filtered to, if any; that one goes without saying, so only the others
+// are listed ("Also at").
+export default function ItemDetail({ item, brands, stores = [], activeStoreId = null }) {
   const preferred = brands.find((b) => b.is_preferred) || brands[0]
   const otherBrands = brands.filter((b) => b !== preferred)
-  if (!preferred && !item.selection_criteria && !item.last_bought_at) return null
+  const filtered = stores.some((s) => s.id === activeStoreId)
+  const storeNames = stores
+    .filter((s) => s.id !== activeStoreId)
+    .map((s) => s.name)
+    .sort((a, b) => a.localeCompare(b))
+  if (!preferred && !item.selection_criteria && !item.last_bought_at && !stores.length) {
+    return null
+  }
 
   return (
     <div className="item-facts">
@@ -37,6 +48,12 @@ export default function ItemDetail({ item, brands }) {
           <div>
             <dt>How to pick</dt>
             <dd>{item.selection_criteria}</dd>
+          </div>
+        )}
+        {stores.length > 0 && (
+          <div>
+            <dt>{filtered ? 'Also at' : 'Available at'}</dt>
+            <dd>{storeNames.length ? storeNames.join(', ') : 'Nowhere else'}</dd>
           </div>
         )}
         {item.last_bought_at && (
