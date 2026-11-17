@@ -14,6 +14,39 @@ export async function linkStores(itemId, storeIds) {
   return { itemId }
 }
 
+// Postgres / PostgREST codes for a table that doesn't exist: what
+// item_photos gets before migrations/005_item_photo.sql has been run.
+const MISSING_TABLE = ['42P01', 'PGRST205']
+
+export function isMissingTable(error) {
+  return MISSING_TABLE.includes(error?.code)
+}
+
+export function itemPhotoError(error) {
+  return isMissingTable(error)
+    ? "Item photos aren't set up on this database yet. Whoever manages the app can run migrations/005_item_photo.sql to turn them on. Remove the photos to save without them."
+    : null
+}
+
+// Replaces an item's own photos with `urls`, in that order.
+export async function saveItemPhotos(itemId, urls) {
+  const { error: clearError } = await supabase.from('item_photos').delete().eq('item_id', itemId)
+  if (clearError) return clearError
+  if (!urls.length) return null
+  const { error } = await supabase
+    .from('item_photos')
+    .insert(urls.map((image_url, position) => ({ item_id: itemId, image_url, position })))
+  return error
+}
+
+// An item's own photo URLs in display order, from the item_photos rows.
+export function photoUrlsFor(photos, itemId) {
+  return photos
+    .filter((p) => p.item_id === itemId)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .map((p) => p.image_url)
+}
+
 export async function createItem(details, categories) {
   const { categoryId, error: categoryError } = await resolveCategory(
     categories,
@@ -36,12 +69,23 @@ export async function createItem(details, categories) {
     return { error: "Couldn't create the item. Try again." }
   }
 
-  if (details.brandName.trim() || details.imageUrl) {
-    // a photo with no brand typed in is saved under the item's own name
+  if (details.photos?.length) {
+    const photoError = await saveItemPhotos(newItem.id, details.photos)
+    if (photoError) {
+      console.error(photoError)
+      // take the half-made item back out, so trying again doesn't hit
+      // "that item already exists"
+      await supabase.from('items').delete().eq('id', newItem.id)
+      return { error: itemPhotoError(photoError) || "Couldn't save the photos. Try again." }
+    }
+  }
+
+  if (details.brandName.trim() || details.brandImageUrl) {
+    // a brand photo with no brand typed in is saved under the item's own name
     await supabase.from('item_brands').insert({
       item_id: newItem.id,
       brand_name: details.brandName.trim() || details.name,
-      image_url: details.imageUrl.trim() || null,
+      image_url: details.brandImageUrl || null,
       is_preferred: true,
     })
   }

@@ -4,7 +4,7 @@ import EntryEditDialog from './EntryEditDialog'
 import ItemEditDialog from './ItemEditDialog'
 import { formatRelativeTime } from '../utils/time'
 import ListEmptyState from './ListEmptyState'
-import { sortCategories } from '../utils/items'
+import { photoUrlsFor, sortCategories } from '../utils/items'
 
 // How long a checked-off row stays on screen: the circle fills and the
 // name is struck through, then the row collapses. Matches list.css.
@@ -20,6 +20,7 @@ export default function ItemList({
   categories,
   itemStores,
   brands,
+  photos = [],
   stores,
   members = [],
   activeStoreId,
@@ -195,7 +196,19 @@ export default function ItemList({
                 </div>
                 {isExpanded && (
                   <div className="list-row-panel">
-                    {item && <ItemDetail item={item} brands={itemBrands} />}
+                    {item && (
+                      <ItemDetail
+                        item={item}
+                        brands={itemBrands}
+                        photos={photoUrlsFor(photos, item.id)}
+                        stores={stores.filter((store) =>
+                          itemStores.some(
+                            (link) => link.item_id === item.id && link.store_id === store.id,
+                          ),
+                        )}
+                        activeStoreId={activeStoreId}
+                      />
+                    )}
                     <div className="entry-panel-actions">
                       <button
                         type="button"
@@ -213,14 +226,16 @@ export default function ItemList({
                           Edit item details
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() => onDelete(entry, item)}
-                      >
-                        Remove from list
-                      </button>
                     </div>
+                    {/* quiet on purpose: it's undoable from the toast, and
+                        the edits above are what people usually came for */}
+                    <button
+                      type="button"
+                      className="quiet-button danger entry-remove-button"
+                      onClick={() => onDelete(entry, item)}
+                    >
+                      Remove from list
+                    </button>
                     {editing === 'entry' && (
                       <EntryEditDialog
                         entry={entry}
@@ -239,6 +254,7 @@ export default function ItemList({
                           .filter((link) => link.item_id === item.id)
                           .map((link) => link.store_id)}
                         brands={itemBrands}
+                        photos={photoUrlsFor(photos, item.id)}
                         onSaved={finishEditing}
                         onClose={() => setEditing(null)}
                         onStoreAdded={onStoreAdded}

@@ -152,6 +152,15 @@
   min-height: var(--tap);
 }
 
+/* Placeholders carry real guidance ("e.g. firm, deep green…"), and the
+   browser's default grey (like --text-faint) is too light to read.
+   --text-muted still sets them apart from typed text. */
+.item-dialog ::placeholder,
+.confirm-dialog ::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 .dialog-section {
   margin: 0;
   padding-top: var(--space-3);
@@ -315,7 +324,9 @@
 .brand-card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* Remove stays at the right even when there's no Preferred radio
+     (a single brand) on the left */
+  justify-content: flex-end;
   gap: var(--space-2);
   margin: 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
 }
@@ -323,6 +334,7 @@
 .preferred-toggle {
   display: flex;
   align-items: center;
+  margin-right: auto;
   gap: var(--space-2);
   min-height: var(--tap);
   font-size: var(--text-sm);
@@ -351,6 +363,51 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+}
+
+/* An item's own photos in a form: thumbnails with a remove button on the
+   corner, then the add button. */
+.photos-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.photos-field-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photos-field-list li {
+  position: relative;
+  /* room for the remove button, which hangs off the corner */
+  padding: 10px 10px 0 0;
+}
+
+.photos-field-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--text-secondary);
+  color: var(--surface);
+}
+
+/* a 44px tap area around the 28px button */
+.photos-field-remove::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .photo-picker .secondary-button {
@@ -471,6 +528,24 @@
   align-items: flex-start;
   gap: var(--space-3);
   font-size: var(--text-sm);
+}
+
+.item-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* the item's own photos: one row that scrolls sideways when there are many */
+.item-photo-strip {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.item-photo-strip::-webkit-scrollbar {
+  display: none;
 }
 
 .item-facts-photo {

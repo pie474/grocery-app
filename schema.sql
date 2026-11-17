@@ -60,6 +60,16 @@ create table item_brands (
   is_preferred boolean default false
 );
 
+-- photos of the item itself, as many as you like; a brand's packaging
+-- photo lives on item_brands instead
+create table item_photos (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid references items(id) on delete cascade,
+  image_url text not null,
+  position integer default 0, -- display order
+  created_at timestamptz default now()
+);
+
 -- the live, editable list: one row per thing currently needed or recently bought
 create table list_entries (
   id uuid primary key default gen_random_uuid(),
@@ -81,7 +91,7 @@ alter publication supabase_realtime add table stores;
 alter publication supabase_realtime add table item_brands;
 alter publication supabase_realtime add table categories;
 
--- Row Level Security: this starter uses one shared household id (from
+-- Row Level Security: this app uses one shared household id (from
 -- .env) as the access boundary rather than per-user auth, since a family
 -- list usually doesn't need individual logins. Anyone with the anon key
 -- and household id can read/write that household's rows.
@@ -92,6 +102,7 @@ alter table categories enable row level security;
 alter table items enable row level security;
 alter table item_stores enable row level security;
 alter table item_brands enable row level security;
+alter table item_photos enable row level security;
 alter table list_entries enable row level security;
 
 create policy "household read" on categories for select using (true);
@@ -111,6 +122,7 @@ create policy "household delete" on list_entries for delete using (true);
 
 create policy "household read" on stores for select using (true);
 create policy "household write" on stores for insert with check (true);
+create policy "household update" on stores for update using (true);
 create policy "household delete" on stores for delete using (true);
 
 create policy "household read" on item_stores for select using (true);
@@ -120,6 +132,10 @@ create policy "household delete" on item_stores for delete using (true);
 create policy "household read" on item_brands for select using (true);
 create policy "household write" on item_brands for insert with check (true);
 create policy "household delete" on item_brands for delete using (true);
+
+create policy "household read" on item_photos for select using (true);
+create policy "household write" on item_photos for insert with check (true);
+create policy "household delete" on item_photos for delete using (true);
 
 -- Item photos: a public bucket (the URL is what gets saved on item_brands).
 -- Same open-by-design policies as everything else here; see the note below.
@@ -138,7 +154,7 @@ create policy "household delete" on members for delete using (true);
 
 create policy "household read" on households for select using (true);
 
--- NOTE: these policies are intentionally open (true) to keep the starter
+-- NOTE: these policies are intentionally open (true) to keep things
 -- simple — anyone with your anon key could read/write any household's
 -- data if they guessed a household_id. Fine for a private family app you
 -- don't share the URL for; if you want it locked down properly, add

@@ -12,6 +12,7 @@ export default function AddItemForm({
   stores,
   itemStores = [],
   entries = [],
+  activeStoreId = null,
   addedBy = null,
   onAdded,
   onStoreAdded,
@@ -43,7 +44,9 @@ export default function AddItemForm({
   // add, so they stay out of the way of the list until then.
   const showExtras = !!(name.trim() || quantity || note)
 
-  async function addToList(itemId) {
+  // storeIds: where the item is sold, so App can tell whether the new row
+  // shows under the current store filter
+  async function addToList(itemId, itemName, storeIds) {
     const { error } = await supabase.from('list_entries').insert({
       household_id: HOUSEHOLD_ID,
       item_id: itemId,
@@ -60,7 +63,7 @@ export default function AddItemForm({
     setName('')
     setQuantity('')
     setNote('')
-    onAdded?.()
+    onAdded?.({ name: itemName, storeIds })
     return true
   }
 
@@ -71,7 +74,8 @@ export default function AddItemForm({
       return
     }
     setSaving(true)
-    if (!(await addToList(item.id))) {
+    const storeIds = itemStores.filter((l) => l.item_id === item.id).map((l) => l.store_id)
+    if (!(await addToList(item.id, item.name, storeIds))) {
       setError(`Couldn't add "${item.name}". Check your connection and try again.`)
     }
     setSaving(false)
@@ -114,7 +118,10 @@ export default function AddItemForm({
       ? await linkStores(existing.id, details.stores)
       : await createItem(details, categories)
     if (result.error) return result.error
-    if (!(await addToList(result.itemId))) return "Couldn't add it to the list. Try again."
+    const itemName = existing?.name || details.name
+    if (!(await addToList(result.itemId, itemName, details.stores))) {
+      return "Couldn't add it to the list. Try again."
+    }
     setDialogOpen(false)
   }
 
@@ -187,7 +194,7 @@ export default function AddItemForm({
           <div className="add-item-extra-row">
             <input
               className="quantity-input"
-              placeholder="Qty (e.g. 2, 1 gal)"
+              placeholder="Qty (e.g. 2)"
               aria-label="Quantity"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
@@ -211,6 +218,8 @@ export default function AddItemForm({
           items={items}
           categories={categories}
           stores={stores}
+          // a brand-new item starts out sold at the store being shopped
+          initialStoreIds={activeStoreId ? [activeStoreId] : []}
           onSave={handleCreate}
           onStoreAdded={onStoreAdded}
           onClose={() => setDialogOpen(false)}

@@ -13,6 +13,9 @@
   /* text */
   --text: #1c1c1a;
   --text-secondary: #40403a;
+  /* --text-muted is the quietest colour for anything people read: it
+     keeps 4.5:1 on --bg, --surface and --surface-sunken in both themes.
+     --text-faint is below that, so only for decoration (chevrons, rules). */
   --text-muted: #6b6a63;
   --text-faint: #9c9a92;
 
@@ -84,9 +87,20 @@
   /* the smallest comfortable tap target */
   --tap: 44px;
 
+  /* the app's single column: phone width, a little wider on big screens
+     (below), so the layout reads as a deliberate column rather than a
+     phone stranded in an empty page */
+  --column-width: 480px;
+
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --duration-fast: 120ms;
   --duration: 200ms;
+}
+
+@media (min-width: 900px) {
+  :root {
+    --column-width: 640px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {

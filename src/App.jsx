@@ -6,11 +6,13 @@ import AddItemForm from './components/AddItemForm'
 import CatalogView from './components/CatalogView'
 import BoughtView from './components/BoughtView'
 import UndoToast from './components/UndoToast'
+import StoreManager from './components/StoreManager'
 import MemberPicker from './components/MemberPicker'
 import MemberPrompt from './components/MemberPrompt'
 import AppHeader from './components/AppHeader'
 import BottomNav from './components/BottomNav'
 import ListSkeleton from './components/ListSkeleton'
+import { isMissingTable } from './utils/items'
 import {
   getDeviceMemberId,
   setDeviceMemberId,
@@ -21,6 +23,10 @@ import {
 // header title for each view
 const VIEW_TITLES = { list: 'Grocery List', bought: 'Bought', catalog: 'Catalog' }
 
+// How many toasts show at once. Checking off a few items in a row keeps
+// each one's Undo within reach; past this the oldest goes.
+const MAX_TOASTS = 3
+
 // list_entries fields for an entry that's back on the list
 const NEEDED = { status: 'needed', bought_at: null, bought_by: null }
 
@@ -30,6 +36,7 @@ export default function App() {
   const [categories, setCategories] = useState([])
   const [itemStores, setItemStores] = useState([])
   const [brands, setBrands] = useState([])
+  const [photos, setPhotos] = useState([]) // item_photos rows
   const [entries, setEntries] = useState([])
   const [members, setMembers] = useState([])
   const [activeStoreId, setActiveStoreId] = useState(null)
@@ -39,10 +46,13 @@ export default function App() {
   const [view, setView] = useState('list') // 'list' | 'bought' | 'catalog'
   // "Not now" on the first-run "who's using this phone?" card
   const [memberPromptDismissed, setMemberPromptDismissedState] = useState(getMemberPromptDismissed)
-  const [toast, setToast] = useState(null) // { id, message, undo, error }
+  // [{ id, message, undo, error, actionLabel }], oldest first
+  const [toasts, setToasts] = useState([])
+  const [storeManagerOpen, setStoreManagerOpen] = useState(false)
   // who's using this phone: recorded as who added or bought things here
   const [deviceMemberId, setDeviceMemberIdState] = useState(getDeviceMemberId)
-  const toastTimeoutRef = useRef(null)
+  // each toast's own timeout, by toast id
+  const toastTimersRef = useRef(new Map())
   const toastIdRef = useRef(0)
 
   const loadAll = useCallback(async () => {
@@ -52,6 +62,7 @@ export default function App() {
         supabase.from('categories').select('*').eq('household_id', HOUSEHOLD_ID),
         supabase.from('item_stores').select('*'),
         supabase.from('item_brands').select('*'),
+        supabase.from('item_photos').select('*'),
         supabase
           .from('list_entries')
           .select('*')
@@ -60,7 +71,9 @@ export default function App() {
         supabase.from('members').select('*').eq('household_id', HOUSEHOLD_ID),
       ])
 
-    const failed = results.find((res) => res.error)
+    // item_photos doesn't exist until migrations/005_item_photo.sql has
+    // run; that just means no item has photos yet, not a failed load
+    const failed = results.find((res) => res.error && !isMissingTable(res.error))
     if (failed) {
       // Keep whatever is already on screen rather than blanking the list
       // on a flaky connection.
@@ -76,6 +89,7 @@ export default function App() {
       categoriesRes,
       itemStoresRes,
       brandsRes,
+      photosRes,
       entriesRes,
       membersRes,
     ] = results
@@ -84,6 +98,7 @@ export default function App() {
     setCategories(categoriesRes.data || [])
     setItemStores(itemStoresRes.data || [])
     setBrands(brandsRes.data || [])
+    setPhotos(photosRes.data || [])
     setEntries(entriesRes.data || [])
     setMembers(membersRes.data || [])
     setLoadError(false)
@@ -126,7 +141,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel)
       window.removeEventListener('online', loadAll)
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+      toastTimersRef.current.forEach(clearTimeout)
     }
   }, [loadAll])
 
@@ -151,23 +166,55 @@ export default function App() {
   const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
   const showMemberPrompt = members.length > 0 && !currentMemberId && !memberPromptDismissed
 
-  // undo: a function for an Undo button, or null for a plain message.
-  // A new toast replaces the current one and restarts its timer; errors
-  // stay up longer so there's time to read them.
-  function showToast(message, undo, { error = false } = {}) {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+  // undo: a function for the toast's button (labelled "Undo", or
+  // actionLabel), or null for a plain message. Each toast has its own
+  // timer; errors stay up longer so there's time to read them.
+  function showToast(message, undo, { error = false, actionLabel } = {}) {
     toastIdRef.current += 1
-    setToast({ id: toastIdRef.current, message, undo, error })
-    toastTimeoutRef.current = setTimeout(() => setToast(null), error ? 8000 : 6000)
+    const id = toastIdRef.current
+    setToasts((prev) => {
+      const next = [...prev, { id, message, undo, error, actionLabel }]
+      next.slice(0, -MAX_TOASTS).forEach((t) => clearToastTimer(t.id))
+      return next.slice(-MAX_TOASTS)
+    })
+    toastTimersRef.current.set(
+      id,
+      setTimeout(() => dismissToast(id), error ? 8000 : 6000),
+    )
   }
 
   function showError(message) {
     showToast(message, null, { error: true })
   }
 
-  function dismissToast() {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    setToast(null)
+  function clearToastTimer(id) {
+    clearTimeout(toastTimersRef.current.get(id))
+    toastTimersRef.current.delete(id)
+  }
+
+  function dismissToast(id) {
+    clearToastTimer(id)
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  // After the add form puts something on the list. Under a store filter
+  // the new row only shows if the item is sold at that store; otherwise
+  // say where it went, so the add doesn't look like it silently failed.
+  function handleItemAdded({ name, storeIds }) {
+    loadAll()
+    if (!activeStoreId || storeIds.includes(activeStoreId)) return
+    const storeName = stores.find((s) => s.id === activeStoreId)?.name || 'this store'
+    showToast(
+      `Added "${name}". It's not sold at ${storeName}, so it's under All items.`,
+      () => setActiveStoreId(null),
+      { actionLabel: 'Show all' },
+    )
+  }
+
+  // a deleted store can't stay the filter
+  function handleStoreDeleted(store) {
+    if (store.id === activeStoreId) setActiveStoreId(null)
+    loadAll()
   }
 
   // Local edits so the screen updates on tap instead of after a round
@@ -369,6 +416,42 @@ export default function App() {
     return true
   }
 
+  // Puts catalog items on the list as new entries: "Add to list" in the
+  // Catalog tab and "Buy again" in the Bought tab. requests is a list of
+  // { item, quantity? }. Resolves to whether it worked.
+  async function handleAddToList(requests) {
+    if (!requests.length) return false
+    const rows = requests.map(({ item, quantity = null }) => ({
+      household_id: HOUSEHOLD_ID,
+      item_id: item.id,
+      status: 'needed',
+      quantity,
+      note: null,
+      added_by: currentMemberId,
+    }))
+    const label =
+      requests.length === 1 ? `"${requests[0].item.name}"` : `${requests.length} items`
+    const { data, error } = await supabase.from('list_entries').insert(rows).select()
+    if (error) {
+      console.error(error)
+      showError(`Couldn't add ${label} to the list. Check your connection and try again.`)
+      return false
+    }
+    const added = data || []
+    const ids = added.map((e) => e.id)
+    setEntries((prev) => [...added, ...prev.filter((e) => !ids.includes(e.id))])
+    showToast(`Added ${label} to the list`, async () => {
+      setEntries((prev) => prev.filter((e) => !ids.includes(e.id)))
+      const { error: undoError } = await supabase.from('list_entries').delete().in('id', ids)
+      if (undoError) {
+        console.error(undoError)
+        added.forEach(restoreEntry)
+        showError(`Couldn't undo. ${label} is still on the list.`)
+      }
+    })
+    return true
+  }
+
   function recomputeLastBoughtFor(affected) {
     return Promise.all([...new Set(affected.map((e) => e.item_id))].map(recomputeLastBought))
   }
@@ -431,6 +514,19 @@ export default function App() {
         )}
       </AppHeader>
 
+      {/* straight after the header on the List tab: it sticks under it,
+          and the two read as one block */}
+      {view === 'list' && (
+        <StoreFilter
+          stores={stores}
+          entries={entries}
+          itemStores={itemStores}
+          activeStoreId={activeStoreId}
+          onChange={setActiveStoreId}
+          onEditStores={() => setStoreManagerOpen(true)}
+        />
+      )}
+
       {loadError && (
         <div className="sync-banner" role="alert">
           <svg className="sync-banner-icon" width="18" height="18" viewBox="0 0 24 24"
@@ -456,23 +552,15 @@ export default function App() {
 
       {view === 'list' && (
         <>
-          <StoreFilter
-            stores={stores}
-            entries={entries}
-            itemStores={itemStores}
-            activeStoreId={activeStoreId}
-            onChange={setActiveStoreId}
-            onStoreAdded={loadAll}
-          />
-
           <AddItemForm
             items={items}
             categories={categories}
             stores={stores}
             itemStores={itemStores}
             entries={entries}
+            activeStoreId={activeStoreId}
             addedBy={currentMemberId}
-            onAdded={loadAll}
+            onAdded={handleItemAdded}
             onStoreAdded={loadAll}
           />
 
@@ -482,6 +570,7 @@ export default function App() {
             categories={categories}
             itemStores={itemStores}
             brands={brands}
+            photos={photos}
             stores={stores}
             members={members}
             activeStoreId={activeStoreId}
@@ -501,6 +590,7 @@ export default function App() {
           members={members}
           onMoveBack={handleMoveBack}
           onDeleteForever={handleDeleteForever}
+          onBuyAgain={handleAddToList}
         />
       )}
 
@@ -510,7 +600,10 @@ export default function App() {
           categories={categories}
           itemStores={itemStores}
           brands={brands}
+          photos={photos}
           stores={stores}
+          entries={entries}
+          onAddToList={handleAddToList}
           onChanged={loadAll}
           onStoreAdded={loadAll}
         />
@@ -522,13 +615,17 @@ export default function App() {
         neededCount={entries.filter((e) => e.status === 'needed').length}
       />
 
-      <UndoToast
-        id={toast?.id}
-        message={toast?.message}
-        error={toast?.error}
-        onUndo={toast?.undo}
-        onDismiss={dismissToast}
-      />
+      {storeManagerOpen && (
+        <StoreManager
+          stores={stores}
+          itemStores={itemStores}
+          onChanged={loadAll}
+          onDeleted={handleStoreDeleted}
+          onClose={() => setStoreManagerOpen(false)}
+        />
+      )}
+
+      <UndoToast toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }

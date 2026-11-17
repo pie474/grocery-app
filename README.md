@@ -1,69 +1,118 @@
-# Family Grocery List — starter
+# Family Grocery List
 
-A shared, realtime grocery list with per-store item availability, preferred
-brands (with images), and produce selection tips. Built with React + Vite +
-Supabase.
+A shared grocery list for one household, built to be used on a phone in the
+shop. Everyone sees the same list, updated live; each item remembers where
+it's sold, which brand to get and how to pick a good one.
+
+React + Vite on the front, Supabase (Postgres, realtime, storage) behind it.
+It installs to the home screen as a PWA.
+
+## What it does
+
+**List** — what's needed now.
+
+- Add items by name. Search tolerates spelling ("jira" finds Jeera) and asks
+  "did you mean" before creating a near-duplicate.
+- Filter to the store you're standing in. Each store pill shows how many
+  things on the list it sells, and the filter stays pinned as you scroll.
+- Items are grouped by category, in the order you walk the store.
+- Tap the circle to check an item off, with Undo. Tap the row for details:
+  the item's photos, preferred brand, how to pick it, where else it's sold
+  and when it was last bought.
+- Quantity, a note and who added it, per entry.
+
+**Bought** — purchase history, by day.
+
+- Search it; older purchases load 30 days at a time.
+- **Buy again** puts an item back on the list and keeps the record.
+- **Move back to list** undoes a purchase that didn't happen and removes
+  the record. **Delete** removes the record only.
+- Select several purchases to act on them together.
+
+**Catalog** — every item the household has ever added.
+
+- Search, and filter by category or store.
+- Add an item to the list with one tap, or open it to edit its name,
+  category, stores, photos, brands (each with a photo) and picking tips.
+- **Manage categories**: add, rename, merge, delete, and drag into aisle
+  order.
+
+**Also**
+
+- **Edit stores** (end of the store filter row): add, rename, delete.
+- The avatar in the top right sets who's using this phone, which is
+  recorded as who added and who bought each item.
+- Changes from other phones appear within a second or two. If the
+  connection drops, the list stays on screen with a notice.
+- Light and dark themes follow the phone's setting.
 
 ## Setup
 
-1. **Create a Supabase project** at supabase.com (free tier is plenty).
-2. **Run the schema:** open the SQL editor in your Supabase dashboard and
-   run everything in `schema.sql`. This also creates the public
-   `item-photos` storage bucket used for item photos. If you set up
-   before photos existed, run just the `item-photos` bucket/policy
-   statements from `schema.sql`. If you set up before categories were
-   their own table, run `migrations/001_categories.sql` instead of
-   re-running the schema. If you set up before purchases recorded who
-   bought them, also run `migrations/002_bought_by.sql`.
-   If you set up before categories could be put in your own order, also
-   run `migrations/003_category_order.sql`.
-3. **Create your household row** — in the Supabase table editor, add one
-   row to `households` (any name), then copy its `id`.
-4. **Add your stores** — add a few rows to `stores` (e.g. "Trader Joe's",
-   "Costco") using that household id.
-5. **Add household members** — add a row per person to `members` (name +
-   household id). This powers the "who are you" picker in the top right,
-   which records who added and who bought each item — skip it and the
-   picker just won't show up.
-6. **Copy env vars:**
+1. **Create a Supabase project** at supabase.com. The free tier is enough.
+2. **Run the schema.** In the Supabase SQL editor, run all of `schema.sql`.
+   It creates the tables, the access policies and the public `item-photos`
+   storage bucket.
+3. **Create your household.** In the table editor, add one row to
+   `households` (any name) and copy its `id`.
+4. **Add the people.** Add a row per person to `members` (name and the
+   household id). This is the one thing that can't be done from the app
+   yet. Skip it and the app works without names.
+5. **Set the environment.**
    ```
    cp .env.example .env
    ```
-   Fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from
-   Settings → API in your Supabase dashboard, and `VITE_HOUSEHOLD_ID` from
+   Fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from
+   Settings → API in the Supabase dashboard, and `VITE_HOUSEHOLD_ID` from
    step 3.
-7. **Install and run:**
+6. **Run it.**
    ```
    npm install
    npm run dev
    ```
-8. **Share it with family:** deploy the `dist/` build (e.g. to Vercel or
-   Netlify, free tier) and send everyone the link — they'll all read/write
-   the same household id, so no login screen is needed.
-9. **Install it like an app (optional):** the build is a PWA. On Android,
-   Chrome offers "Install app"; on iPhone, open the link in Safari and tap
-   Share → Add to Home Screen. Installed copies pick up new deploys on
-   their own, usually from the next launch. To change the icon, replace
-   `public/icon.svg` and the PNGs next to it.
+   Stores, categories and items are all added from inside the app.
 
-## What's here vs. what's next
+## Deploying
 
-Included: shared realtime list, store filter ("what can I get here"),
-add-item flow that can define a brand-new catalog item with stores +
-preferred brand + image + selection criteria in one form, quantity/note/
-added-by fields per list entry (who's using each phone is picked once in
-the header and remembered via localStorage), a **Bought** action separate from **delete**
-on each list row (each with its own undo toast for a few seconds after),
-a "last bought" timestamp per item shown in the item detail and Catalog
-view, a dedicated **Bought** tab to browse purchase history with "move
-back to list" or permanent delete, and a full **Catalog** tab to browse,
-search, create, edit, and delete every item in the database — including
-its stores, brand list, and selection criteria. Categories are shared
-records: typing one reuses an existing match (ignoring case), and
-**Manage categories** in the Catalog tab renames, merges, or deletes them.
+`npm run build` writes a static site to `dist/`. Host it anywhere that
+serves static files (Vercel and Netlify both have free tiers), with the
+three environment variables set at build time. Send the family the link.
 
-Reasonable next steps, not built yet:
-- Auto-detecting which store you're at via geolocation instead of tapping
-  a pill
-- Real per-member auth if you want to lock the household down beyond a
-  shared id (see the note in `schema.sql`)
+To install it like an app: on Android, Chrome offers "Install app"; on
+iPhone, open the link in Safari and choose Share → Add to Home Screen.
+Installed copies pick up new deploys by themselves, usually on the next
+launch. To change the icon, replace `public/icon.svg` and the PNGs beside
+it.
+
+## Access and privacy
+
+There are no logins. Everyone who has the link uses the same household id,
+and the database policies are open: anyone with the project's publishable
+key could read or change the data. That's a reasonable trade for a private
+family app whose link you don't share. To lock it down, add Supabase Auth
+and scope each policy in `schema.sql` to the signed-in member.
+
+Photos are stored in a public bucket, so anyone with a photo's URL can
+view it. Removing a photo in the app unlinks it but leaves the file in
+storage.
+
+## Code layout
+
+```
+schema.sql          fresh-database schema, policies, storage bucket
+migrations/         upgrades for databases created from older versions
+src/App.jsx         data loading, realtime, and the list/bought actions
+src/components/     one file per screen, dialog or control
+src/hooks/          the "discard changes?" guard shared by the dialogs
+src/utils/          search, time formatting, item and photo helpers
+src/styles/         plain CSS; tokens.css holds colours, type and spacing
+```
+
+There is no test suite or linter configured. `npm run build` is the check
+that everything compiles.
+
+## Not built yet
+
+- Managing household members from inside the app.
+- Reordering an item's photos.
+- Working offline: the app needs a connection to load and to save.
+- Per-person sign-in (see Access and privacy).
