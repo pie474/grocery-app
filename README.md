@@ -83,25 +83,6 @@ Installed copies pick up new deploys by themselves, usually on the next
 launch. To change the icon, replace `public/icon.svg` and the PNGs beside
 it.
 
-## Updating an existing database
-
-`schema.sql` is for a fresh project. If your database was set up from an
-earlier version, run the migrations you're missing, in order, in the SQL
-editor. Each file's header says what it does and when to run it relative
-to deploying.
-
-| Migration | Needed for |
-| --- | --- |
-| `001_categories.sql` | Categories as shared records (rename, merge) |
-| `002_bought_by.sql` | Recording who bought each item |
-| `003_category_order.sql` | Putting categories in your own order |
-| `004_stores_update.sql` | Renaming stores |
-| `005_item_photo.sql` | Photos on an item itself, not just its brands |
-
-The app tolerates 003, 004 and 005 being absent: the feature that needs
-one tells you which file to run, and everything else keeps working. 001
-and 002 are required.
-
 ## Access and privacy
 
 There are no logins. Everyone who has the link uses the same household id,
