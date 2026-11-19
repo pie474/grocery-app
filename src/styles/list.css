@@ -525,6 +525,31 @@
   font-weight: 700;
 }
 
+/* added by someone else since this phone last looked: a dot by the name
+   and the "who, when" in the accent colour. Gone once the row is opened
+   or the app is put away. */
+.new-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.is-new .item-name {
+  font-weight: 600;
+}
+
+.is-new .entry-added-by {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.is-new .avatar {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 .chevron {
   flex: none;
   width: 7px;

@@ -12,6 +12,7 @@ import MemberPrompt from './components/MemberPrompt'
 import AppHeader from './components/AppHeader'
 import BottomNav from './components/BottomNav'
 import ListSkeleton from './components/ListSkeleton'
+import useNewEntries from './hooks/useNewEntries'
 import { isMissingTable } from './utils/items'
 import {
   getDeviceMemberId,
@@ -138,9 +139,19 @@ export default function App() {
     // catch up on anything missed while the phone had no signal
     window.addEventListener('online', loadAll)
 
+    // ...or while the app was in the background. An installed PWA is
+    // suspended when you switch away or lock the phone, and realtime
+    // events sent meanwhile are lost; the socket can also take a while to
+    // notice it's dead. So reload whenever the app comes back.
+    function onVisibility() {
+      if (document.visibilityState === 'visible') loadAll()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     return () => {
       supabase.removeChannel(channel)
       window.removeEventListener('online', loadAll)
+      document.removeEventListener('visibilitychange', onVisibility)
       toastTimersRef.current.forEach(clearTimeout)
     }
   }, [loadAll])
@@ -164,6 +175,7 @@ export default function App() {
 
   // ignores a remembered member who has since been removed
   const currentMemberId = members.some((m) => m.id === deviceMemberId) ? deviceMemberId : null
+  const { isNew, dismiss: dismissNew } = useNewEntries(entries, hasLoaded, currentMemberId)
   const showMemberPrompt = members.length > 0 && !currentMemberId && !memberPromptDismissed
 
   // undo: a function for the toast's button (labelled "Undo", or
@@ -577,6 +589,8 @@ export default function App() {
             onClearStore={() => setActiveStoreId(null)}
             onMarkBought={handleMarkBought}
             onDelete={handleDeleteEntry}
+            isNew={isNew}
+            onSeen={dismissNew}
             onChanged={loadAll}
             onStoreAdded={loadAll}
           />
