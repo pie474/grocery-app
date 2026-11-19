@@ -27,6 +27,8 @@ export default function ItemList({
   onClearStore,
   onMarkBought,
   onDelete,
+  isNew,
+  onSeen,
   onChanged,
   onStoreAdded,
 }) {
@@ -38,6 +40,7 @@ export default function ItemList({
   // Edit and Remove live in the expanded panel, so the row itself only
   // has the one action people use most in the store: checking it off.
   function toggleExpanded(entryId) {
+    onSeen?.(entryId)
     setExpandedId(expandedId === entryId ? null : entryId)
     setEditing(null)
   }
@@ -143,11 +146,12 @@ export default function ItemList({
             const addedByName = membersById[entry.added_by]?.name
             const addedAgo = entry.created_at && formatRelativeTime(entry.created_at)
             const isChecking = entry.id in checking
+            const highlighted = !!isNew?.(entry)
 
             return (
               <div
                 key={entry.id}
-                className={`list-row${isChecking ? ' is-checking' : ''}`}
+                className={`list-row${isChecking ? ' is-checking' : ''}${highlighted ? ' is-new' : ''}`}
                 style={isChecking ? { '--row-height': `${checking[entry.id]}px` } : undefined}
               >
                 <div className="list-row-main">
@@ -169,6 +173,11 @@ export default function ItemList({
                   >
                     <span className="list-row-text">
                       <span className="list-row-title">
+                        {highlighted && (
+                          <span className="new-dot">
+                            <span className="visually-hidden">New: </span>
+                          </span>
+                        )}
                         <span className="item-name">{item?.name}</span>
                         {entry.quantity && <span className="quantity">{entry.quantity}</span>}
                       </span>
